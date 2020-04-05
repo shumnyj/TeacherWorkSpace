@@ -1,0 +1,49 @@
+/*html {
+    height:100%;
+}
+body {
+    height:100%;
+}*/
+.header {
+    background: black;
+	color: white;
+	padding: 3px;
+}
+
+.Mcontainer {
+    margin: auto;
+    height: 100vh;
+    max-width: 1280px;
+	padding:  0 15px 0 15px;
+	border: 3px solid green;
+    background: darkgrey;
+}
+
+#sidebar {
+    height: 100%;
+	background: blue;
+	color: white;
+}
+
+.content {
+    padding: 5px;
+	background: white;
+	border: 1px solid black;
+}
+
+.editlink {
+    position: absolute;
+	right: 10%;
+    text-decoration: underline;
+}
+
+table {
+    width: 90%;
+    margin: 5px;
+}
+
+tr th {
+    padding: 3px;
+    max-width: 400px;
+    border: 1px solid grey;
+}

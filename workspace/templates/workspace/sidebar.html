@@ -1,0 +1,10 @@
+<ul>
+    <li><a href="{% url 'workspace:index' %}"> Home </a></li>
+    {% if not user.is_authenticated %}
+        <li><a href="{% url 'workspace:login' %}"> Login </a></li>
+    {% else %}
+        <li><a href="{% url 'workspace:profile' %}"> Profile </a></li>
+        <li><a href="{% url 'workspace:schedule' %}"> My Schedule </a></li>
+    {% endif %}
+    <li><a> Ipsum </a></li>
+</ul>

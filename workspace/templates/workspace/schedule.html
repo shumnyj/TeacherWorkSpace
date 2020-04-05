@@ -1,0 +1,12 @@
+{% extends "./base.html" %}
+
+{% block title %} Schedule {% endblock %}
+{% block title2 %} My schedule {% endblock %}
+{% block content %}
+    {% if personal_lessons %}
+        <h1>WEEEEEEEEEEEEEEE</h1>
+        <p>{{ weekday }}</p>
+    {% else %}
+        <p>Broke</p>
+    {% endif %}
+{% endblock %}

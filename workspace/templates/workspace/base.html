@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Base Page{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'workspace/general.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'workspace/bootstrap.css' %}">
+</head>
+<body>
+
+<div class="Mcontainer">
+    <h2 class="header">{% block title2 %}Base Page{% endblock %}</h2>
+    <div class = "row">
+        <div class="col-sm-2" id="sidebar">
+            {% include "./sidebar.html" %}
+        </div>
+        <div class="col-sm-10 content">
+            {% block content %} err {% endblock %}
+        </div>
+    </div>
+</div>
+</body>
+</html>

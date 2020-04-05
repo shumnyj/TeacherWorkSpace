@@ -1,0 +1,33 @@
+{% extends "./base.html" %}
+
+{% block title %} Lesson {% endblock %}
+{% block title2 %} {{chosen_lesson.datetime}} {% endblock %}
+{% block content %}
+    {% if chosen_lesson %}
+            <h1>{{chosen_lesson.discipline.name}}</h1>
+            <p>{{chosen_lesson.teacher.user.first_name}} {{chosen_lesson.teacher.user.last_name}}</p>
+            <p>{{chosen_lesson.group.name}}</p>
+            <p>{{chosen_lesson.location.room }}/{{chosen_lesson.location.building}}</p>
+            <p>{{chosen_lesson.datetime}}</p>
+            {% if not user.is_authenticated %}
+                <h2> boom</h2>
+            {% elif auth_teacher and auth_teacher.username == chosen_lesson.teacher.user.username %}
+                <h3>teacher</h3>
+                <form action="{% url 'workspace:index' %}" method="post">
+                    {% csrf_token %}
+                    <input type="submit" value="Teacher">
+                </form>
+            {% elif auth_student and auth_student.student.group == chosen_lesson.group %}
+                <h3>student</h3>
+                <form action="{% url 'workspace:index' %}" method="post">
+                    {% csrf_token %}
+                    <input type="submit" value="Student">
+                </form>
+            {% endif %}
+            {% if auth_student %}
+                <p>{{auth_student.student.group.name}}</p>
+            {% endif %}
+    {% else %}
+        <p>Broke</p>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'workspace/general.css' %}">
+<body>
+<div class="Mcontainer">
+    <p>lessons:</p>
+    {% if lesson_list %}
+        <ul>
+        {% for lesson in lesson_list %}
+            <li><a href="{% url 'workspace:l_detail' lesson.id %}">
+                {{ lesson.discipline.name }} {{ lesson.group.name }}
+            </a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No lessons</p>
+    {% endif %}
+</div>
+</body>

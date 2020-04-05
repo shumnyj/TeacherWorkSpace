@@ -1,0 +1,60 @@
+{% extends "./base.html" %}
+
+{% block title %} Profile {% endblock %}
+{% block title2 %} Profile {% endblock %}
+{% block content %}
+    {% if request.user.is_authenticated %}
+        <table>
+            <tr>
+                <th>Username:</th>
+                <th>{{request.user.username}}</th>
+            </tr>
+            <tr>
+                <th>E-mail:</th>
+                <th>{{request.user.email}}</th>
+            </tr>
+            <tr>
+                <th>First name:</th>
+                <th>{{request.user.first_name}}</th>
+            </tr>
+            <tr>
+                <th>Last Name:</th>
+                <th>{{request.user.last_name}}</th>
+            </tr>
+            <tr>
+                <th>Status:</th>
+                <th>
+                    {% if request.user.teacher %}
+                        Teacher
+                    {% elif request.user.student %}
+                        Student
+                    {% endif %}
+                    {% if request.user.is_staff %} Staff {% endif %}
+                </th>
+            </tr>
+            {% if request.user.teacher %}
+                <tr>
+                    <th>Page:</th>
+                    <th>{{request.user.teacher.page}}</th>
+                </tr>
+            {% elif request.user.student %}
+                <tr>
+                    <th>Group:</th>
+                    <th>{{request.user.student.group.name}}</th>
+                </tr>
+                <tr>
+                    <th>Github:</th>
+                    <th>{{request.user.student.github}}</th>
+                </tr>
+            {% endif %}
+        </table>
+        <a class="editlink" href="{% url 'workspace:profile' %}"> Edit profile </a>
+        <form method="post" action="{% url 'workspace:logout' %}">
+            {% csrf_token %}
+            <input type="submit" value="Logout">
+        </form>
+
+    {% else %}
+        <p>Please log in</p>
+    {% endif %}
+{% endblock %}
