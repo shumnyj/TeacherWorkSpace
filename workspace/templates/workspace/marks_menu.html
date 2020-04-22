@@ -1,0 +1,20 @@
+{% extends "./base.html" %}
+
+{% block title %} Courses {% endblock %}
+{% block title2 %} Courses for {{ request.user.nickname }} {% endblock %}
+{% block content %}
+    <h5> Here you can check marks for your courses: </h5>
+    <ul>
+        {% if auth_teacher %}
+            {% for course in auth_teacher %}
+                <li class=marks_li><a href="{% url 'workspace:marks_entities' course.id %}">{{ course.discipline }} {{ course.group }}</a></li>
+            {% endfor %}
+        {% elif auth_student %}
+            {% for course in auth_student %}
+        <li class=marks_li> <a href="{% url 'workspace:marks_entities' course.id %}"> {{ course.discipline }} </a></li>
+            {% endfor %}
+        {% else %}
+            <li class=course_li > These aren't the Droids you're looking for... </li>
+        {% endif %}
+    </ul>
+{% endblock %}

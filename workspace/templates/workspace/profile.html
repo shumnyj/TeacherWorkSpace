@@ -6,53 +6,50 @@
     {% if request.user.is_authenticated %}
         <table>
             <tr>
-                <th>Username:</th>
-                <th>{{request.user.username}}</th>
+                <td>Username:</td>
+                <td>{{request.user.username}}</td>
             </tr>
             <tr>
-                <th>E-mail:</th>
-                <th>{{request.user.email}}</th>
+                <td>E-mail:</td>
+                <td>{{request.user.email}}</td>
             </tr>
             <tr>
-                <th>First name:</th>
-                <th>{{request.user.first_name}}</th>
+                <td>First name:</td>
+                <td>{{request.user.first_name}}</td>
             </tr>
             <tr>
-                <th>Last Name:</th>
-                <th>{{request.user.last_name}}</th>
+                <td>Last Name:</td>
+                <td>{{request.user.last_name}}</td>
             </tr>
             <tr>
-                <th>Status:</th>
-                <th>
+                <td>Status:</td>
+                <td>
                     {% if request.user.teacher %}
                         Teacher
                     {% elif request.user.student %}
                         Student
                     {% endif %}
                     {% if request.user.is_staff %} Staff {% endif %}
-                </th>
+                </td>
             </tr>
             {% if request.user.teacher %}
                 <tr>
-                    <th>Page:</th>
-                    <th>{{request.user.teacher.page}}</th>
+                    <td>Page:</td>
+                    <td>{{request.user.teacher.page}}</td>
                 </tr>
             {% elif request.user.student %}
                 <tr>
-                    <th>Group:</th>
-                    <th>{{request.user.student.group.name}}</th>
+                    <td>Group:</td>
+                    <td>{{request.user.student.group.name}}</td>
                 </tr>
                 <tr>
-                    <th>Github:</th>
-                    <th>{{request.user.student.github}}</th>
+                    <td>Github:</td>
+                    <td>{{request.user.student.github}}</td>
                 </tr>
             {% endif %}
         </table>
         <a class="editlink" href="{% url 'workspace:profile' %}"> Edit profile </a>
-        <form method="post" action="{% url 'workspace:logout' %}">
-            {% csrf_token %}
-            <input type="submit" value="Logout">
-        </form>
+        <a href="{% url 'workspace:logout' %}">Logout</a>
 
     {% else %}
         <p>Please log in</p>

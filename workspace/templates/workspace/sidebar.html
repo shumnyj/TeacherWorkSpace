@@ -5,6 +5,11 @@
     {% else %}
         <li><a href="{% url 'workspace:profile' %}"> Profile </a></li>
         <li><a href="{% url 'workspace:schedule' %}"> My Schedule </a></li>
+        <li><a href="{% url 'workspace:marks_menu' %}"> Marks and control </a></li>
+        {% if user.is_staff %}
+        <li><a href="{% url 'workspace:batch_add' %}"> Add lessons </a></li>
+        {% endif %}
     {% endif %}
+
     <li><a> Ipsum </a></li>
 </ul>

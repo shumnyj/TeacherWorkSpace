@@ -1,0 +1,28 @@
+{% extends "./base.html" %}
+
+{% block title %} Marks {% endblock %}
+{% block title2 %} Marks for {{ this_entity }} {% endblock %}
+{% block content %}
+    <h5> Marks for {{ this_entity.name }}: </h5>
+    {% if marks_list|length > 0  %}
+        <table class="marks_table">
+            <tr>
+                <th>Students</th>
+                <th>Mark</th>
+            </tr>
+            {% for st, mark in marks_list %}
+                <tr>
+                    <td >{{ st }}</td>
+                    <td >{{ mark }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% elif marks_list %}
+        <p> Empty beep </p>
+    {% else %}
+        <p> These aren't the Droids you're looking for... </p>
+    {% endif %}
+    {% if auth_teacher %}
+        <a href="{% url 'workspace:marks_detail' this_entity.course.pk this_entity.pk %}" > Edit marks </a>
+    {% endif %}
+{% endblock %}

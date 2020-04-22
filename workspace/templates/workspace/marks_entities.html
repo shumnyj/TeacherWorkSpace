@@ -1,0 +1,16 @@
+{% extends "./base.html" %}
+
+{% block title %} Course {% endblock %}
+{% block title2 %} Course #{{ this_course.id }} {% endblock %}
+{% block content %}
+    <h5> Control entities for course {{ this_course }}: </h5>
+    {% if entities_list %}
+    <ul>
+        {% for ent in entities_list %}
+        <li class=marks_li> <a href="{% url 'workspace:marks_detail' this_course.id ent.id %}">{{ ent.name }}</a></li>
+        {% endfor %}
+    </ul>
+    {% else %}
+        <p> These aren't the Droids you're looking for... </p>
+    {% endif %}
+{% endblock %}

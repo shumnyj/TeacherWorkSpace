@@ -1,8 +1,10 @@
 from django.db import models
 from django.conf import settings
 
+# TODO use strftime() everywhere
 
-class SGroup(models.Model):
+
+class StudentGroup(models.Model):
     name = models.CharField(max_length=8)
     faculty = models.CharField(max_length=128, default="generic")
     course = models.PositiveSmallIntegerField(default=1)
@@ -17,7 +19,7 @@ class SGroup(models.Model):
 class Student(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name='student', default=0)
-    group = models.ForeignKey(SGroup, on_delete=models.CASCADE)
+    group = models.ForeignKey(StudentGroup, on_delete=models.CASCADE)
     # name = models.CharField(max_length=128)  # first/last name already kept from user
     # mail = models.EmailField()
     github = models.URLField(blank=True)
@@ -45,6 +47,19 @@ class Discipline(models.Model):
         return self.name
 
 
+class AcademicCourse(models.Model):
+    discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE)
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    group = models.ForeignKey(StudentGroup, on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['discipline', 'teacher', 'group'], name='unique_courses')]
+
+    def __str__(self):
+        return str(self.discipline) + ' ' + str(self.group)
+# TODO add CourseAccess with teacher+course for additional teachers, add acessed courses to marks_menu
+
+
 class Location(models.Model):
     room = models.CharField(max_length=8)
     building = models.CharField(max_length=50)
@@ -57,23 +72,24 @@ class Location(models.Model):
 
 class Lesson(models.Model):
     discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE)  # to_field=name ?
-    group = models.ForeignKey(SGroup, on_delete=models.CASCADE)           # to_field=name ?
+    group = models.ForeignKey(StudentGroup, on_delete=models.CASCADE)           # to_field=name ?
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
     datetime = models.DateTimeField()
+    # modified =  models.BooleanField(default=False)
 
     def __str__(self):
         return self.discipline.name + ' ' + str(self.datetime)
 
 
 class Attendance(models.Model):
-    lesson = models.ForeignKey(Discipline, on_delete=models.CASCADE)
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     lon = models.FloatField()
     lat = models.FloatField()
 
     def __str__(self):
-        return self.lesson.discipline.name + ' ' + self.student.__str__()
+        return self.lesson.discipline.name + ' ' + str(self.student)
 
 
 class ControlCategory(models.Model):
@@ -84,16 +100,18 @@ class ControlCategory(models.Model):
 
 
 class ControlEntity(models.Model):
-    discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE)
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    # discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE)
+    # teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    course = models.ForeignKey(AcademicCourse, on_delete=models.CASCADE,  default=0)
     etype = models.ForeignKey(ControlCategory, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     date_created = models.DateField()
     deadline = models.DateField(blank=True)
-    mark_max = models.PositiveSmallIntegerField(blank=True)
+    mark_max = models.PositiveSmallIntegerField(blank=True, null=True)
+    materials = models.TextField(blank=True)
 
     def __str__(self):
-        return self.name + ' ' + str(self.deadline)
+        return str(self.course.group) + ' ' + self.name + ' ' + str(self.deadline)
 
 
 class Mark(models.Model):
@@ -101,6 +119,20 @@ class Mark(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     date = models.DateField(auto_now_add=True)
     mark = models.PositiveSmallIntegerField(default=1)
+    # last_change = models.DateField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['reason', 'student'], name='unique_marks')]
+        # models.CheckConstraint(check=models.Q(student__group=models.F("reason__course__group")),
+        #                                               name="group_student_check") ADD GROUP CONSTRAINT
 
     def __str__(self):
-        return self.reason.name + ' ' + self.student.__str__()
+        return self.reason.name + ' ' + str(self.student)
+
+
+class AttendanceToken(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    expire = models.DateTimeField()
+
+    def __str__(self):
+        return str(self.expire)
