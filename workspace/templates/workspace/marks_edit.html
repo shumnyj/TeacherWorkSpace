@@ -1,0 +1,29 @@
+{% extends "./base.html" %}
+
+{% block title %} Edit {% endblock %}
+{% block title2 %} Edit Marks for {{ this_entity }} {% endblock %}
+{% block content %}
+    <h5> Edit for {{ this_entity.name }}: </h5>
+    <h4>{{ message }}</h4>
+    {% if student_forms %}
+        <form action="{% url 'workspace:marks_edit' this_entity.course.pk this_entity.pk %}" method="post">
+            {% csrf_token %}
+            <div>{{ student_forms.management_form }}</div>
+            <table class="marks_table">
+                <tr>
+                    <th>Students</th>
+                    <th>Mark</th>
+                </tr>
+                {% for form in student_forms %}
+                <tr>
+                    {% for field in form %}
+
+                        <td >{{ field }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </table>
+            <input type="submit" value="Submit">
+        </form>
+    {% endif %}
+{% endblock %}

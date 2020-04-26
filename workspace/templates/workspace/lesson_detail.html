@@ -4,42 +4,38 @@
 {% block scr %} <script type="text/javascript" src="{% static 'workspace/geoposmark.js' %}"></script> {% endblock scr %}
 
 {% block title %} Lesson {% endblock %}
-{% block title2 %} {{chosen_lesson.datetime}} {% endblock %}
+{% block title2 %} {{chosen_lesson.discipline}} {% endblock %}
 {% block content %}
     {% if chosen_lesson %}
-            {% if message %}
-                <p style="color: purple;">{{message}}</p>
-            {% endif %}
-            <h1>{{chosen_lesson.discipline.name}}</h1>
-            <p>{{chosen_lesson.teacher.user.first_name}} {{chosen_lesson.teacher.user.last_name}}</p>
-            <p>{{chosen_lesson.group.name}}</p>
-            <p>{{chosen_lesson.location.room }}/{{chosen_lesson.location.building}}</p>
-            <p>{{chosen_lesson.datetime}}</p>
-            {% if not user.is_authenticated %}
-                <h2> Error </h2>
-            {% elif auth_teacher and auth_teacher == chosen_lesson.teacher.user %}
-                <p>Logged as teacher</p>
+        <h5 style="text-decoration: underline;">{{chosen_lesson}}</h5>
+        <div>{{chosen_lesson.datetime|date:"l, j.m.Y G:i O" }}</div>
+        <div>{{chosen_lesson.location}}</div>
+        <div>{{chosen_lesson.teacher}}</div>
+        <div>{{chosen_lesson.group}}</div>
+        {% if auth_teacher %}
+            <p class="mytmp">Logged as teacher</p>
+            {% if at_form %}
                 <form action="{% url 'workspace:l_detail' chosen_lesson.id %}" method="post">
                     {% csrf_token %}
                     {{ at_form }}
                     <input type="submit" value="Start timer">
                 </form>
-            {% elif auth_student and auth_student.student.group == chosen_lesson.group %}
-                <p>Logged as student</p>
-                {% if at_form %}
-                    <button id="setButton" onclick="getLocation()"> Set current location </button>
-                    <form action="{% url 'workspace:l_detail' chosen_lesson.id %}" method="post">
-                        {% csrf_token %}
-                        {{ at_form }}
-                        <p id="f_err"></p>
-
-                        <input type="submit" value="Mark attendance" />
-                    </form>
-                {% endif %}
             {% endif %}
-            {% if auth_student %}
-                <p>{{auth_student.student.group.name}}</p>
+        {% elif auth_student %}
+            <p class="mytmp">Logged as student {{auth_student.student.group.name}}</p>
+            {% if at_form %}
+                <button id="setButton" onclick="getLocation()"> Set current location </button>
+                <form action="{% url 'workspace:l_detail' chosen_lesson.id %}" method="post">
+                    {% csrf_token %}
+                    {{ at_form }}
+                    <p id="f_err"></p>
+                    <input type="submit" value="Mark attendance" />
+                </form>
             {% endif %}
+        {% endif %}
+        {% if message %}
+            <p class="mytmp">{{message}} </p>
+        {% endif %}
     {% else %}
         <p>Broke</p>
     {% endif %}

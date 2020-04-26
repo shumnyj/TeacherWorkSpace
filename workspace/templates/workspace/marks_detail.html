@@ -23,6 +23,6 @@
         <p> These aren't the Droids you're looking for... </p>
     {% endif %}
     {% if auth_teacher %}
-        <a href="{% url 'workspace:marks_detail' this_entity.course.pk this_entity.pk %}" > Edit marks </a>
+        <a href="{% url 'workspace:marks_edit' this_entity.course.pk this_entity.pk %}" > Edit marks </a>
     {% endif %}
 {% endblock %}

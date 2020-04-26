@@ -1,0 +1,8 @@
+<div class="notification-container">
+    <div class="notification-button" onclick="popup_show()">New notifications</div>
+    <div class="notification-content" id="NotifyCont">
+         {% for n in notifications %}
+            <div>{{ n.note|safe }}</div>
+         {% endfor %}
+    </div>
+</div>

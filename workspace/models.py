@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
+from datetime import datetime
 
-# TODO use strftime() everywhere
 
 
 class StudentGroup(models.Model):
@@ -57,7 +57,14 @@ class AcademicCourse(models.Model):
 
     def __str__(self):
         return str(self.discipline) + ' ' + str(self.group)
-# TODO add CourseAccess with teacher+course for additional teachers, add acessed courses to marks_menu
+
+
+class CourseAccess(models.Model):
+    course = models.ForeignKey(AcademicCourse, on_delete=models.CASCADE)
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.course) + ' ' + str(self.teacher)
 
 
 class Location(models.Model):
@@ -76,7 +83,7 @@ class Lesson(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
     datetime = models.DateTimeField()
-    # modified =  models.BooleanField(default=False)
+    modified = models.BooleanField(default=False)
 
     def __str__(self):
         return self.discipline.name + ' ' + str(self.datetime)
@@ -85,8 +92,8 @@ class Lesson(models.Model):
 class Attendance(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    lon = models.FloatField()
-    lat = models.FloatField()
+    lon = models.FloatField(blank=True)
+    lat = models.FloatField(blank=True)
 
     def __str__(self):
         return self.lesson.discipline.name + ' ' + str(self.student)
@@ -105,9 +112,9 @@ class ControlEntity(models.Model):
     course = models.ForeignKey(AcademicCourse, on_delete=models.CASCADE,  default=0)
     etype = models.ForeignKey(ControlCategory, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
-    date_created = models.DateField()
+    date_created = models.DateField(auto_now_add=True)
     deadline = models.DateField(blank=True)
-    mark_max = models.PositiveSmallIntegerField(blank=True, null=True)
+    mark_max = models.DecimalField(max_digits=4, decimal_places=1, default=0)
     materials = models.TextField(blank=True)
 
     def __str__(self):
@@ -118,7 +125,7 @@ class Mark(models.Model):
     reason = models.ForeignKey(ControlEntity, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     date = models.DateField(auto_now_add=True)
-    mark = models.PositiveSmallIntegerField(default=1)
+    mark = models.DecimalField(max_digits=4, decimal_places=1, default=0)
     # last_change = models.DateField(auto_now_add=True)
 
     class Meta:
@@ -136,3 +143,13 @@ class AttendanceToken(models.Model):
 
     def __str__(self):
         return str(self.expire)
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    # Not many-to-many for personal dismiss
+    note = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.user) + ' ' + str(self.created)

@@ -15,4 +15,6 @@ admin.site.register(wsm.Attendance)
 admin.site.register(wsm.AttendanceToken)
 admin.site.register(wsm.Mark)
 admin.site.register(wsm.AcademicCourse)
+admin.site.register(wsm.CourseAccess)
+admin.site.register(wsm.Notification)
 

@@ -1,35 +1,122 @@
-/*html {
+html {
     height:100%;
 }
+
 body {
     height:100%;
-}*/
+    font-size: 100%;
+    /* background: url("body_bg.jpg") repeat-y ;
+    background-size: 100%;*/
+}
+.mytmp {
+    color: darkgrey;
+    font-size: 0.8em;
+}
+
 .header {
-    background: black;
+    padding: 10px;
+	margin: 0px;
+    background: green;
 	color: white;
-	padding: 3px;
+
+	text-align: center;
 }
 
 .Mcontainer {
     margin: auto;
-    height: 100vh;
-    max-width: 1280px;
-	padding:  0 15px 0 15px;
-	border: 3px solid green;
-    background: darkgrey;
+    /*min-height: 50vh;*/
+    max-width: 1440px;
+    background: rgba(255, 255, 255, 0.7)
 }
 
-#sidebar {
-    height: 100%;
-	background: blue;
-	color: white;
+footer {
+    height: 50px;
+    background: green;
+    border-bottom: solid darkgreen 3px;
+    margin-bottom: 5px;
+}
+
+.row {
+    margin: 0;
 }
 
 .content {
-    padding: 5px;
-	background: white;
+    padding: 20px;
+	background: transparent;
+
 	border: 1px solid black;
+	z-index: 1
 }
+
+#sidebar {
+    width: 100%;
+    position: sticky;
+    top: 0;
+    padding: 10px;
+    max-height: 300px;
+	background: darkslateblue;
+	color: white;
+	border-bottom: 10px solid blueviolet;
+	z-index: 100;
+}
+
+/*#sidebar div {
+    margin: 0;
+    padding: 0;
+}*/
+
+.list-group-item {
+    border: 1px solid white;
+    padding: 3px 10px 3px 10px;
+    background: transparent;
+    color: white;
+}
+
+/*.list-group-item:hover {
+    padding-left: 35px;
+}*/
+
+.notification-container {
+    /*position: fixed;
+    top: 70px;
+    right: 70px;
+    z-index: 100;*/
+    margin-top: 10px;
+}
+
+.notification-button {
+    max-width: 300px;
+    max-height: 100px;
+    background: orange;
+    border: 1px solid red;
+    border-radius: 3px;
+    padding: 3px;
+    z-index: 100;
+}
+
+.notification-container .show {
+    display: block;
+
+}
+
+.notification-content {
+    position: relative;
+    display: none;
+    max-height: 400px;
+    background: lightgrey;
+    /*width: 20vw;
+    right: 103%;
+    top: 0;*/
+    z-index: 100;
+}
+
+.notification-content div {
+    color: indigo;
+    margin: 5px;
+    border-bottom: 1px dotted blue
+}
+
+
 
 .editlink {
     position: absolute;
@@ -61,3 +148,5 @@ tr td {
 .l_t_string {
     width: 60%;
 }
+
+

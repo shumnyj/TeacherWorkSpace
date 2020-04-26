@@ -25,7 +25,7 @@ SECRET_KEY = 'nf1kb@q)9hk3r@t@^9_m(@v@f9v%mb=l-3i%b2uymkl11xwnvl'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [".ngrok.io", "127.0.0.1", "localhost"]
 
 
 # Application definition
@@ -56,7 +56,7 @@ ROOT_URLCONF = 'TeacherWorkSpace.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [], # os.path.join(BASE_DIR, 'templates')
+        'DIRS': [],  # os.path.join(BASE_DIR, 'templates')
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

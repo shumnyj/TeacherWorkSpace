@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
     <title>{% block title %}Base Page{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     {% load static %}
     <link rel="stylesheet" type="text/css" href="{% static 'workspace/bootstrap.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'workspace/general.css' %}">
+    <script type="text/javascript" src="{% static 'workspace/popup.js' %}"></script>
     <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script> -->
     {% block scr %} {% endblock %}
 </head>
 <body>
 
+<h2 class="header">{% block title2 %}Base Page{% endblock %}</h2>
 <div class="Mcontainer">
-    <h2 class="header">{% block title2 %}Base Page{% endblock %}</h2>
     <div class = "row">
-        <div class="col-sm-2" id="sidebar">
+        <div class="col-lg-2" id="sidebar" >
             {% include "./sidebar.html" %}
         </div>
-        <div class="col-sm-10 content">
+        <div class="col-lg-10 content">
             {% block content %} err {% endblock %}
         </div>
     </div>
+    <footer></footer>
 </div>
 </body>
 </html>

@@ -1,13 +1,13 @@
 {% extends "./base.html" %}
 
 {% block title %} Schedule {% endblock %}
-{% block title2 %} My schedule {% endblock %}
+{% block title2 %} My schedule for 2 weeks {% endblock %}
 {% block content %}
 
     {% if personal_lessons %}
         {% for dt, dy in personal_lessons %}
-            <a>{{ dt }}</a>
             {% if dy %}
+                <div>{{ dt }}</div>
                 <table class="lessons_table">
                     <tr>
                         <th class="l_t_time">Time</th>
@@ -20,11 +20,8 @@
                     </tr>
                     {% endfor %}
                 </table>
-            {% else %}
-                <div>None</div>
             {% endif %}
         {% endfor %}
-        <a>{{ weekday }}</a>
     {% else %}
         <p>Broke</p>
     {% endif %}

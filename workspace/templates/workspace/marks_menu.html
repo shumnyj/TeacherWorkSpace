@@ -9,12 +9,23 @@
             {% for course in auth_teacher %}
                 <li class=marks_li><a href="{% url 'workspace:marks_entities' course.id %}">{{ course.discipline }} {{ course.group }}</a></li>
             {% endfor %}
+            {% if extra_courses %}
+                </ul>
+                <p> --Extra courses:-- </p>
+                <ul>
+                {% for c in extra_courses %}
+                    <li class=marks_li><a href="{% url 'workspace:marks_entities' c.id %}">{{ c.discipline }} {{ c.group }}</a></li>
+                {% endfor %}
+            {% endif %}
+            </ul>
         {% elif auth_student %}
             {% for course in auth_student %}
-        <li class=marks_li> <a href="{% url 'workspace:marks_entities' course.id %}"> {{ course.discipline }} </a></li>
+                <li class=marks_li> <a href="{% url 'workspace:marks_entities' course.id %}"> {{ course.discipline }} </a></li>
+            {% empty %}
+                <p>Currently you don't have any courses</p>
             {% endfor %}
+            </ul>
         {% else %}
-            <li class=course_li > These aren't the Droids you're looking for... </li>
+            <p> These aren't the Droids you're looking for... </p>
         {% endif %}
-    </ul>
 {% endblock %}

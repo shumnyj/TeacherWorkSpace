@@ -1,12 +1,9 @@
 from django import forms
+
 import datetime
 import workspace.models as wsm
 
 DAY_CHOICES = [(0, "MON"), (1, "TUE"), (2, "WEN"), (3, "THU"), (4, "FRI"), (5, "SAT"), (6, "SUN")]
-
-
-class TimeForm(forms.Form):
-    submit_time = forms.DateTimeField(label='Submit time', initial=datetime.datetime.now())
 
 
 class AttCheckForm(forms.Form):
@@ -28,3 +25,22 @@ class BatchLessonsForm(forms.Form):
     week = forms.BooleanField(label='Both weeks?',)
     start_date = forms.DateField(label='Start date (week)', widget=forms.SelectDateWidget())
     end_date = forms.DateField(label='Last date (week)', widget=forms.SelectDateWidget)
+
+
+class MarkForm(forms.Form):
+    student = forms.ModelChoiceField(label='Student', queryset=wsm.Student.objects.none(),
+                                     empty_label=None,  disabled=True)
+    mark = forms.DecimalField(label='Mark', max_digits=4, decimal_places=1, required=False)
+
+    def __init__(self, *args, **kwargs):
+        try:
+            qs = kwargs.pop('student_group')
+        except KeyError:
+            qs = None
+        finally:
+            super().__init__(*args, **kwargs)
+            if qs:
+                self.fields["student"] = forms.ModelChoiceField(label='Student', queryset=qs, empty_label=None)
+
+
+# MarkFormSet = forms.formset_factory(MarkForm, extra=3)

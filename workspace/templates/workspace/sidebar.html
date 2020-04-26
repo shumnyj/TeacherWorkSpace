@@ -1,15 +1,21 @@
-<ul>
-    <li><a href="{% url 'workspace:index' %}"> Home </a></li>
+
+<div class="list-group">
+    <a class="list-group-item list-group-item-action" href="{% url 'workspace:index' %}"> Home </a>
     {% if not user.is_authenticated %}
-        <li><a href="{% url 'workspace:login' %}"> Login </a></li>
+        <a class="list-group-item list-group-item-action" href="{% url 'workspace:login' %}"> Login </a>
+</div>
     {% else %}
-        <li><a href="{% url 'workspace:profile' %}"> Profile </a></li>
-        <li><a href="{% url 'workspace:schedule' %}"> My Schedule </a></li>
-        <li><a href="{% url 'workspace:marks_menu' %}"> Marks and control </a></li>
+        <a class="list-group-item list-group-item-action" href="{% url 'workspace:profile' %}"> Profile </a>
+        <a class="list-group-item list-group-item-action" href="{% url 'workspace:schedule' %}"> My Schedule </a>
+        <a class="list-group-item list-group-item-action" href="{% url 'workspace:marks_menu' %}"> Marks and control </a>
         {% if user.is_staff %}
-        <li><a href="{% url 'workspace:batch_add' %}"> Add lessons </a></li>
+        <a class="list-group-item list-group-item-action" href="{% url 'workspace:batch_add' %}"> Add lessons </a>
+        {% endif %}
+        <a class="list-group-item list-group-item-action" href="{% url 'workspace:logout' %}"> Logout </a>
+</div>
+        {% if notifications %}
+            {% include "./notifications.html" %}
         {% endif %}
     {% endif %}
 
-    <li><a> Ipsum </a></li>
-</ul>
+
