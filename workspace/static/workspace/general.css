@@ -116,7 +116,25 @@ footer {
     border-bottom: 1px dotted blue
 }
 
+.ul-form {
+    list-style-type:none;
+}
 
+.ul-form li {
+     padding: 0 20px 0 20px;
+}
+
+.ul-form li label {
+    width: 200px;
+    max-width: 47%;
+    padding: 3px;
+}
+
+.ul-form li input,select,textarea {
+    width: 300px;
+    max-width: 100%;
+    padding: 3px;
+}
 
 .editlink {
     position: absolute;

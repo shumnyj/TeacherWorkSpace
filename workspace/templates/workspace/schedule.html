@@ -1,27 +1,48 @@
 {% extends "./base.html" %}
 
+{% load static %}
+{% block scr %}
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script type="text/javascript" src="{% static 'workspace/bootstrap.min.js' %}"></script>
+{% endblock %}
 {% block title %} Schedule {% endblock %}
 {% block title2 %} My schedule for 2 weeks {% endblock %}
 {% block content %}
-
     {% if personal_lessons %}
+        <div class="container mt-3">
+        <ul class="nav nav-tabs">
         {% for dt, dy in personal_lessons %}
-            {% if dy %}
-                <div>{{ dt }}</div>
-                <table class="lessons_table">
-                    <tr>
-                        <th class="l_t_time">Time</th>
-                        <th class="l_t_string">Lesson</th>
-                    </tr>
-                    {% for lesson in dy %}
-                    <tr>
-                        <td class="l_t_time">{{ lesson.datetime.time }}</td>
-                        <td class="l_t_string"><a href="{% url 'workspace:l_detail' lesson.id %}"> {{ lesson.discipline.name }} {{ lesson.group.name }}</a></td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            {% endif %}
+            <li class="nav-item">
+                {% if dy %}
+                    <a class="nav-link" data-toggle="tab" href="{{ dt|date:'#D-d-m' }}">{{ dt|date:'d.m' }}</a>
+                {% else %}
+                    <a class="nav-link disabled" data-toggle="tab" href="#">{{ dt|date:'d.m' }}</a>
+                {% endif %}
+            </li>
         {% endfor %}
+        </ul>
+        <div class="tab-content">
+            {% for dt, dy in personal_lessons %}
+                {% if dy %}
+                    <div class= "container tab-pane" id="{{ dt|date:'D-d-m'}}">
+                        <h5> {{ dt|date:'l, d.m.Y'}}</h5>
+                        <table class="lessons_table">
+                            <tr>
+                                <th class="l_t_time">Time</th>
+                                <th class="l_t_string">Lesson</th>
+                            </tr>
+                           {% for lesson in dy %}
+                            <tr>
+                                <td class="l_t_time">{{ lesson.datetime|time:'H:i' }}</td>
+                                <td class="l_t_string"><a href="{% url 'workspace:l_detail' lesson.id %}"> {{ lesson.discipline.name }} {{ lesson.group.name }}</a></td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        </div>
     {% else %}
         <p>Broke</p>
     {% endif %}

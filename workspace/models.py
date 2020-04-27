@@ -3,10 +3,10 @@ from django.conf import settings
 from datetime import datetime
 
 
-
 class StudentGroup(models.Model):
     name = models.CharField(max_length=8)
     faculty = models.CharField(max_length=128, default="generic")
+    # specialization =  models.PositiveIntegerField(default=0)
     course = models.PositiveSmallIntegerField(default=1)
     curator = models.CharField(max_length=128, blank=True)
     representative = models.CharField(max_length=128, blank=True)   # староста?
@@ -31,8 +31,7 @@ class Student(models.Model):
 class Teacher(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name='teacher', default=0)
-    # name = models.CharField(max_length=128)
-    # mail = models.EmailField()
+    qualification = models.CharField(max_length=256, blank=True)        # professor, etc
     page = models.URLField(blank=True)
     # contacts etc...
 
@@ -83,6 +82,8 @@ class Lesson(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
     datetime = models.DateTimeField()
+    # type = models.ForeignKey(LessonType, blank=True, on_delete=None)
+    # materials = models.TextField(blank=True)
     modified = models.BooleanField(default=False)
 
     def __str__(self):
@@ -107,15 +108,18 @@ class ControlCategory(models.Model):
 
 
 class ControlEntity(models.Model):
-    # discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE)
-    # teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    # discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE)  # deprecated
+    # teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)        # deprecated
     course = models.ForeignKey(AcademicCourse, on_delete=models.CASCADE,  default=0)
     etype = models.ForeignKey(ControlCategory, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     date_created = models.DateField(auto_now_add=True)
-    deadline = models.DateField(blank=True)
+    deadline = models.DateField(blank=True, null=True)
     mark_max = models.DecimalField(max_digits=4, decimal_places=1, default=0)
     materials = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['course', 'etype', 'name'], name='unique_control')]
 
     def __str__(self):
         return str(self.course.group) + ' ' + self.name + ' ' + str(self.deadline)

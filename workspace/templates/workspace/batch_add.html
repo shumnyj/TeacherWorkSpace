@@ -7,7 +7,7 @@
             <p style="color: purple;">{{message}}</p>
         {% endif %}
         {% if form %}
-            <form action="{% url 'workspace:batch_add' %}" method="post">
+            <form class="ul-form" action="{% url 'workspace:batch_add' %}" method="post">
                 {% csrf_token %}
                 {{ form.as_ul }}
                 <input type="submit" value="Submit">

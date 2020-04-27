@@ -5,12 +5,15 @@
 {% block content %}
     <h5> Control entities for course {{ this_course }}: </h5>
     {% if entities_list %}
-    <ul>
-        {% for ent in entities_list %}
-        <li class=marks_li> <a href="{% url 'workspace:marks_detail' this_course.id ent.id %}">{{ ent.name }}</a></li>
-        {% endfor %}
-    </ul>
+        <ul>
+            {% for ent in entities_list %}
+            <li class=marks_li> <a href="{% url 'workspace:marks_detail' this_course.id ent.id %}">{{ ent.name }}</a></li>
+            {% endfor %}
+        </ul>
+        {% if auth_teacher %}
+            <a href="{% url 'workspace:marks_add_ent' this_course.id %}"> Add more </a>
+        {% endif %}
     {% else %}
-        <p> These aren't the Droids you're looking for... </p>
+        <p class="mytmp"> These aren't the Droids you're looking for... </p>
     {% endif %}
 {% endblock %}

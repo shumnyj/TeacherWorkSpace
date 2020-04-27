@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import NON_FIELD_ERRORS
 
 import datetime
 import workspace.models as wsm
@@ -42,5 +43,21 @@ class MarkForm(forms.Form):
             if qs:
                 self.fields["student"] = forms.ModelChoiceField(label='Student', queryset=qs, empty_label=None)
 
+
+class ControlEntityForm(forms.ModelForm):
+    #course = forms.ModelChoiceField(queryset=wsm.AcademicCourse.objects, )
+    # disabled=True don't really work for this widget=forms.Select(attrs={'disabled': True}) tpp
+
+
+    class Meta:
+        model = wsm.ControlEntity
+        fields = ['course', 'etype', 'name', 'deadline', 'mark_max', 'materials']
+        localized_fields = ('deadline',)
+        error_messages = {
+            NON_FIELD_ERRORS: {'unique_together': "%(model_name)s's %(field_labels)s are not unique.", }
+        }
+        widgets = {
+            'deadline': forms.SelectDateWidget()
+        }
 
 # MarkFormSet = forms.formset_factory(MarkForm, extra=3)

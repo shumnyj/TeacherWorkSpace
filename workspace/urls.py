@@ -18,6 +18,7 @@ urlpatterns = [
 
     path(r'marks/', views.marks_menu_view, name="marks_menu"),
     path(r'marks/<int:c_id>/', views.marks_entities_view, name="marks_entities"),
+    path(r'marks/<int:c_id>/add', views.marks_add_entities_view, name="marks_add_ent"),
     path(r'marks/<int:c_id>/<int:e_id>/', views.marks_detail_view, name="marks_detail"),
     path(r'marks/<int:c_id>/<int:e_id>/edit/', views.marks_edit_view, name="marks_edit"),
 

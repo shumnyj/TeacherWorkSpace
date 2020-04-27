@@ -4,20 +4,10 @@
 {% block title2 %} Index page {% endblock %}
 
 {% block content %}
-    <div>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
-        <p>lessons:</p><p>lessons:</p><p>lessons:</p><p>lessons:</p>
+    <div style="padding-bottom:3000px">
+        <h4> Welcome to workspace page</h4>
         {% if lesson_list %}
+            <p class="mytmp"> Placeholder </p>
             <ul>
             {% for lesson in lesson_list %}
                 <li><a href="{% url 'workspace:l_detail' lesson.id %}">

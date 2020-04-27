@@ -28,6 +28,7 @@ SCHEDULE_TIME = [datetime.time(8, 30, 0, 0, tzinfo=tz_TARGET),
                  datetime.time(16, 10, 0, 0, tzinfo=tz_TARGET)]
 COMMIT_TAG = "[WS]"
 
+
 def index_view(request):
     try:
         lesson_list = wsm.Lesson.objects.order_by('-datetime')[:10]
@@ -86,14 +87,14 @@ def lesson_view(request, l_id):
                             if at_form.is_valid():                              # Valid values
                                 t_lon = at_form.cleaned_data['lon']
                                 t_lat = at_form.cleaned_data['lat']
-                                if -180 < t_lat < 180 and -90 < t_lon < 90:  # Valid values (maybe override is_valid()?)
+                                if -180 < t_lat < 180 and -90 < t_lon < 90:  # Valid values (add validator?)
                                     try:
                                         attendance, cr = wsm.Attendance.objects\
                                             .get_or_create(student=request.user.student, lesson=chosen_lesson,
                                                            defaults={'lon': t_lon, 'lat': t_lat})
                                         # attendance.save()
                                         context['message'] = "Success"
-                                    except wsm.Attendance.MultipleObjectsReturned:             # Shouldn't show up, but...
+                                    except wsm.Attendance.MultipleObjectsReturned:         # Shouldn't show up, but...
                                         context['message'] = "Multiple objects error, contact admin"
                                 else:
                                     context['message'] = "invalid values, try again"
@@ -150,7 +151,7 @@ def webhook_github_view(request, c_id, s_id):       # probably need rest framewo
                             fl.close()  # debug
                             n = wsm.Notification()
                             n.user = a_course.teacher.user
-                            n.note = "Github repo of student {} was updated: {}".\
+                            n.note = "Github repo of student {} was updated:\n {}".\
                                 format(a_student, commit["message"])
                             n.created = tzlocal.get_localzone().localize(datetime.datetime.now())
                             n.save()
@@ -206,19 +207,44 @@ def marks_entities_view(request, c_id):                             # version wi
     c_entities = wsm.ControlEntity.objects.filter(course=a_course)
     context["notifications"] = request.user.notification_set.all()
     if request.user.groups.filter(name="Teachers"):
-        # Strict limitation to marks data (related only)
+        # related users only
         if request.user.teacher == a_course.teacher \
                 or a_course.courseaccess_set.filter(teacher=request.user.teacher).exists():    # Additional access
-            context["entities_list"] = c_entities           # simplified
+            context["entities_list"] = c_entities
+            context["auth_teacher"] = True
             return render(request, "workspace/marks_entities.html", context)
             # alternatively for teacher - table view/list of entites - links to mark input form
     elif request.user.groups.filter(name="Students"):
-        if a_course.group == request.user.student.group:    # Strict limitation to marks data (related only)
+        if a_course.group == request.user.student.group:    # related users only
             # alternatively for student - list of all entites+marks in this course
             context["entities_list"] = c_entities
             return render(request, "workspace/marks_entities.html", context)
     return HttpResponseRedirect("/workspace/")              # Unrelated to course
 
+
+@login_required(login_url="workspace:login")
+def marks_add_entities_view(request, c_id):
+    a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
+    context = {"this_course": a_course}
+    if request.user.groups.filter(name="Teachers"):
+        if request.user.teacher == a_course.teacher:
+            if request.method == 'POST':
+                form = wsf.ControlEntityForm(request.POST, initial={'course': a_course})
+                if form.is_valid():     # no validation without course
+                    # form.cleaned_data['course'] = a_course # immutable
+                    # probably should swap to normal form
+                    form.save()
+                    return HttpResponseRedirect(reverse("workspace:marks_entities", args=[a_course.id]))
+                else:
+                    context['message'] = "Invalid values, try again"
+                    context['form'] = form
+            else:
+                form = wsf.ControlEntityForm(initial={'course': a_course})
+                context['form'] = form
+            context["notifications"] = request.user.notification_set.all()
+            return render(request, "workspace/marks_add_ent.html", context)
+    else:
+        return HttpResponseRedirect("/workspace/")  # Unrelated to course
 
 def student_list_with_marks(a_entity):                # function for creating list of student + mark with spaces
     tmp_set = a_entity.mark_set.all()
@@ -364,6 +390,7 @@ def batch_add_lessons_view(request):        # maybe split weeks
                     t += delta
                     context["message"] = "Success"
             else:
+                context["form"] = form
                 context["message"] = "Error during processing, try again"
         else:
             context["form"] = wsf.BatchLessonsForm()
