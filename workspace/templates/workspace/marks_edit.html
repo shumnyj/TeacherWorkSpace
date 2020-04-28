@@ -4,11 +4,12 @@
 {% block title2 %} Edit Marks for {{ this_entity }} {% endblock %}
 {% block content %}
     <h5> Edit for {{ this_entity.name }}: </h5>
-    <h4>{{ message }}</h4>
+
     {% if student_forms %}
         <form action="{% url 'workspace:marks_edit' this_entity.course.pk this_entity.pk %}" method="post">
             {% csrf_token %}
             <div>{{ student_forms.management_form }}</div>
+            <div>{{ form.non_field_errors }}</div>
             <table class="marks_table">
                 <tr>
                     <th>Students</th>
@@ -17,13 +18,13 @@
                 {% for form in student_forms %}
                 <tr>
                     {% for field in form %}
-
-                        <td >{{ field }}</td>
+                        <td >{{ field }} {{ field.errors }} </td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
             </table>
             <input type="submit" value="Submit">
         </form>
+        <p >{{ message }}</p>
     {% endif %}
 {% endblock %}

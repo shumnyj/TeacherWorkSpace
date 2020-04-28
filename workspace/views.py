@@ -330,7 +330,6 @@ def marks_entities_view(request, c_id):                             # version wi
 @login_required(login_url="workspace:login")
 def marks_add_entities_view(request, c_id):
     """
-
     View with form for teacher to add another :model:`workspace.ControlEntity`
 
     **Context**
@@ -464,7 +463,7 @@ def marks_edit_view(request, c_id, e_id):
                     # TODO disabled students field
                     MarkFormSet = formset_factory(wsf.MarkForm, extra=len(a_students))
                     formset = MarkFormSet(request.POST, form_kwargs={"student_group": a_students})
-                    print(request.POST)
+                    print(request.POST)             # debug
                     if formset.is_valid():                  # Valid forms
                         t = datetime.date.today()
                         for form in formset:
@@ -477,6 +476,9 @@ def marks_edit_view(request, c_id, e_id):
                                 mrk.save()
                         context["message"] = "Successfully saved"
                         return redirect('workspace:marks_detail', c_id=a_course.id, e_id=a_entity.id)
+                    else:
+                        context["message"] = "Error in form"
+                        context["student_forms"] = formset
                 else:
                     # form = wsf.MarkForm(data={"student": a_students[0]}, student_group=a_students)
                     MarkFormSet = formset_factory(wsf.MarkForm, extra=len(a_students))
@@ -488,8 +490,6 @@ def marks_edit_view(request, c_id, e_id):
                     context["student_forms"] = formset
             else:
                 context["message"] = "No students"          # TODO redirect here
-            # context["marks_list"] = a_entity.mark_set.all()
-            # context["marks_list"] = student_list_with_marks(a_entity)
             context["notifications"] = request.user.notification_set.all()
             return render(request, "workspace/marks_edit.html", context)
     return HttpResponseForbidden("403 Get out", reason="forbidden")
