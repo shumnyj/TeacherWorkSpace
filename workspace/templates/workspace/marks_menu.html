@@ -6,8 +6,10 @@
     <h5> Here you can check marks for your courses: </h5>
     <ul>
         {% if auth_teacher %}
-            {% for course in auth_teacher %}
+            {% for course in user_courses %}
                 <li class=marks_li><a href="{% url 'workspace:marks_entities' course.id %}">{{ course.discipline }} {{ course.group }}</a></li>
+            {% empty %}
+                    <p>No curated courses</p>
             {% endfor %}
             {% if extra_courses %}
                 </ul>
@@ -19,13 +21,13 @@
             {% endif %}
             </ul>
         {% elif auth_student %}
-            {% for course in auth_student %}
+            {% for course in user_courses %}
                 <li class=marks_li> <a href="{% url 'workspace:marks_entities' course.id %}"> {{ course.discipline }} </a></li>
             {% empty %}
                 <p>Currently you don't have any courses</p>
             {% endfor %}
             </ul>
         {% else %}
-            <p> These aren't the Droids you're looking for... </p>
+            <p class="mytmp"> These aren't the Droids you're looking for... </p>
         {% endif %}
 {% endblock %}

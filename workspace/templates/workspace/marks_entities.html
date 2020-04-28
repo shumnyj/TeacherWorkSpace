@@ -10,10 +10,10 @@
             <li class=marks_li> <a href="{% url 'workspace:marks_detail' this_course.id ent.id %}">{{ ent.name }}</a></li>
             {% endfor %}
         </ul>
-        {% if auth_teacher %}
-            <a href="{% url 'workspace:marks_add_ent' this_course.id %}"> Add more </a>
-        {% endif %}
     {% else %}
-        <p class="mytmp"> These aren't the Droids you're looking for... </p>
+        <p class="mytmp"> No entities right now </p>
+    {% endif %}
+    {% if auth_teacher %}
+        <a href="{% url 'workspace:marks_add_ent' this_course.id %}"> Add more </a>
     {% endif %}
 {% endblock %}

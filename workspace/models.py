@@ -4,12 +4,17 @@ from datetime import datetime
 
 
 class StudentGroup(models.Model):
+    """
+        Stores a single student group
+    """
     name = models.CharField(max_length=8)
     faculty = models.CharField(max_length=128, default="generic")
-    # specialization =  models.PositiveIntegerField(default=0)
+    specialization = models.PositiveIntegerField(default=0)
     course = models.PositiveSmallIntegerField(default=1)
-    curator = models.CharField(max_length=128, blank=True)
-    representative = models.CharField(max_length=128, blank=True)   # староста?
+    curator = models.ForeignKey("Teacher", null=True, blank=True, on_delete=models.SET_NULL)
+    # curator = models.CharField(max_length=128, blank=True, null=True)
+    representative = models.ForeignKey("Student", null=True, blank=True, on_delete=models.SET_NULL)
+    # representative =  models.CharField(max_length=128, blank=True, null=True)   # староста?
 
     def __str__(self):
         return self.name
@@ -17,11 +22,13 @@ class StudentGroup(models.Model):
 
 
 class Student(models.Model):
+    """
+        Extension for student of :model:`auth.User`, user have to be added to Students group
+    """
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name='student', default=0)
+    card_id_number = models.PositiveIntegerField(default=00000000)
     group = models.ForeignKey(StudentGroup, on_delete=models.CASCADE)
-    # name = models.CharField(max_length=128)  # first/last name already kept from user
-    # mail = models.EmailField()
     github = models.URLField(blank=True)
 
     def __str__(self):
@@ -29,6 +36,9 @@ class Student(models.Model):
 
 
 class Teacher(models.Model):
+    """
+        Extension for teacher of :model:`auth.User`, user have to be added to Teachers group
+    """
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name='teacher', default=0)
     qualification = models.CharField(max_length=256, blank=True)        # professor, etc
@@ -40,6 +50,9 @@ class Teacher(models.Model):
 
 
 class Discipline(models.Model):
+    """
+        Stores a single studying discipline
+    """
     name = models.CharField(max_length=128)
 
     def __str__(self):
@@ -47,6 +60,12 @@ class Discipline(models.Model):
 
 
 class AcademicCourse(models.Model):
+    """
+        Stores objects that represent one studying course with assigned
+        :model:`workspace.Teacher` and :model:`workspace.Discipline`
+        for a single :model:`workspace.StudentGroup`;
+        related to :model:`workspace.ControlEntity`
+    """
     discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     group = models.ForeignKey(StudentGroup, on_delete=models.CASCADE)
@@ -59,6 +78,11 @@ class AcademicCourse(models.Model):
 
 
 class CourseAccess(models.Model):
+    """
+        Represents additional access for :model:`workspace.Teacher` other then
+        recorded to particular :model:`workspace.AcademicCourse`
+        For current needs should be more convenient than ManyToMany field
+    """
     course = models.ForeignKey(AcademicCourse, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
 
@@ -67,6 +91,9 @@ class CourseAccess(models.Model):
 
 
 class Location(models.Model):
+    """
+        Stores a single location (lecture hall, lab, etc) with coordinates
+    """
     room = models.CharField(max_length=8)
     building = models.CharField(max_length=50)
     lon = models.FloatField()
@@ -77,20 +104,29 @@ class Location(models.Model):
 
 
 class Lesson(models.Model):
-    discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE)  # to_field=name ?
+    """
+        Stores a single lesson instance, related to :model:`workspace.Teacher`,
+        :model:`workspace.StudentGroup` and :model:`workspace.Discipline`
+        Not connected with course for flexibility
+    """
+    discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE)        # to_field=name ?
     group = models.ForeignKey(StudentGroup, on_delete=models.CASCADE)           # to_field=name ?
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
     datetime = models.DateTimeField()
-    # type = models.ForeignKey(LessonType, blank=True, on_delete=None)
-    # materials = models.TextField(blank=True)
-    modified = models.BooleanField(default=False)
+    # type = models.ForeignKey(LessonType, blank=True, on_delete=None)          #lect/lab
+    # materials = models.TextField(blank=True)                                  #links, books, etc
+    modified = models.BooleanField(default=False)       # by teacher
 
     def __str__(self):
         return self.discipline.name + ' ' + str(self.datetime)
 
 
 class Attendance(models.Model):
+    """
+        Stores a mark for attendance on the lesson, related to
+        :model:`workspace.Student` and :model:`workspace.Lesson`
+    """
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     lon = models.FloatField(blank=True)
@@ -101,6 +137,9 @@ class Attendance(models.Model):
 
 
 class ControlCategory(models.Model):
+    """
+        Dictionary table for types of :model:`workspace.ControlEntity`
+    """
     name = models.CharField(max_length=128, unique=True)
 
     def __str__(self):
@@ -108,8 +147,10 @@ class ControlCategory(models.Model):
 
 
 class ControlEntity(models.Model):
-    # discipline = models.ForeignKey(Discipline, on_delete=models.CASCADE)  # deprecated
-    # teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)        # deprecated
+    """
+        Stores instances of control measures such as lab works, exams, control works, etc;
+        related to :model:`workspace.AcademicCourse` and :model:`workspace.ControlCategory`
+    """
     course = models.ForeignKey(AcademicCourse, on_delete=models.CASCADE,  default=0)
     etype = models.ForeignKey(ControlCategory, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
@@ -126,6 +167,10 @@ class ControlEntity(models.Model):
 
 
 class Mark(models.Model):
+    """
+        Stores marks for :model:`workspace.Student` for
+        certain :model:`workspace.ControlCategory`;
+    """
     reason = models.ForeignKey(ControlEntity, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     date = models.DateField(auto_now_add=True)
@@ -142,6 +187,11 @@ class Mark(models.Model):
 
 
 class AttendanceToken(models.Model):
+    """
+        Stores a token that used by students to mark :model:`workspace.Attendance`
+        on certain :model:`workspace.Lesson`, created by related teacher, removed
+        on the first usage by student after expiration
+    """
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
     expire = models.DateTimeField()
 
@@ -150,9 +200,13 @@ class AttendanceToken(models.Model):
 
 
 class Notification(models.Model):
+    """
+        Stores notification for :model:`auth.User`
+        User field is not many-to-many for personal dismiss
+    """
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    # Not many-to-many for personal dismiss
     note = models.TextField()
+    link = models.URLField(blank=True)
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

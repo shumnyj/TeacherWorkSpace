@@ -130,7 +130,7 @@ footer {
     padding: 3px;
 }
 
-.ul-form li input,select,textarea {
+.ul-form li input,textarea {
     width: 300px;
     max-width: 100%;
     padding: 3px;
