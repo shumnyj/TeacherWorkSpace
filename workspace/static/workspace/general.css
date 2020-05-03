@@ -110,10 +110,22 @@ footer {
     z-index: 100;
 }
 
-.notification-content div {
+.notification-instance {
+    border-bottom: 1px solid indigo;
+}
+
+.notification-instance .notetext {
     color: indigo;
     margin: 5px;
-    border-bottom: 1px dotted blue
+}
+
+.notification-instance .minitext {
+    padding: 2%;
+    font-size: 0.6em;
+    color: grey;
+    margin: 0;
+    max-width: 70%;
+
 }
 
 .ul-form {

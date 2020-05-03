@@ -9,7 +9,10 @@
     {% if chosen_lesson %}
         <h5 style="text-decoration: underline;">{{chosen_lesson}}</h5>
         <div>{{chosen_lesson.datetime|date:"l, j.m.Y G:i O" }}</div>
-        <div>{{chosen_lesson.location}}</div>
+        <div>{{chosen_lesson.type|default:""}}</div>
+        <div><a href="https://www.google.com/maps/place/{{chosen_lesson.location.lat}},{{chosen_lesson.location.lon}}/@{{chosen_lesson.location.lat}},{{chosen_lesson.location.lon}},15z" target="_blank">
+            {{chosen_lesson.location|default:"No location"}}
+        </a></div>
         <div>{{chosen_lesson.teacher}}</div>
         <div>{{chosen_lesson.group}}</div>
         {% if auth_teacher %}

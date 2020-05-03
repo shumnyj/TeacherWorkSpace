@@ -1,8 +1,12 @@
 <div class="notification-container">
     <div class="notification-button" onclick="popup_show()">New notifications</div>
-    <div class="notification-content" id="NotifyCont">
+    <div class="notification-content" id="NotifCont">
          {% for n in notifications %}
-            <div>{{ n.note|safe }}</div>
+            <div class="notification-instance" >
+                <div><a class="minitext" >{{ n.created }}</a>
+                    <a class="minitext close" href="{% url 'workspace:rm_notif' n.id %}" onclick="rm_notification(this)">X</a></div>
+                <a href={{n.link}} class="notetext">{{ n.note }}</a>
+            </div>
          {% endfor %}
     </div>
 </div>
