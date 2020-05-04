@@ -4,28 +4,29 @@ import pytz
 import tzlocal
 
 from django.urls import reverse
-from django.shortcuts import get_object_or_404, render, redirect
 from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponseBadRequest
 from django.contrib.auth import views as auth_views
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from django.forms import ModelChoiceField, formset_factory
+from django.shortcuts import get_object_or_404, render, redirect
+from django.forms import formset_factory
+from django.forms.models import model_to_dict
 from rest_framework import serializers
 
 import workspace.models as wsm
 import workspace.forms as wsf
 
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-tz_TARGET = tzlocal.get_localzone()  # datetime.datetime.now().astimezone().tzinfo     #EEST
+TZ_TARGET = tzlocal.get_localzone()  # datetime.datetime.now().astimezone().tzinfo     #EEST
 TIME_FORMAT = "%T %z"
 DATE_FORMAT = "%d.%m.%Y"
 DT_FORMAT = DATE_FORMAT + " " + TIME_FORMAT
-SCHEDULE_TIME = [datetime.time(8, 30, 0, 0, tzinfo=tz_TARGET),
-                 datetime.time(10, 25, 0, 0, tzinfo=tz_TARGET),
-                 datetime.time(12, 20, 0, 0, tzinfo=tz_TARGET),
-                 datetime.time(14, 15, 0, 0, tzinfo=tz_TARGET),
-                 datetime.time(16, 10, 0, 0, tzinfo=tz_TARGET)]
+SCHEDULE_TIME = [datetime.time(8, 30, 0, 0, tzinfo=TZ_TARGET),
+                 datetime.time(10, 25, 0, 0, tzinfo=TZ_TARGET),
+                 datetime.time(12, 20, 0, 0, tzinfo=TZ_TARGET),
+                 datetime.time(14, 15, 0, 0, tzinfo=TZ_TARGET),
+                 datetime.time(16, 10, 0, 0, tzinfo=TZ_TARGET)]
 COMMIT_TAG = "[WS]"
 LAT_DELTA = 0.000210
 LON_DELTA = 0.000370
@@ -50,7 +51,7 @@ def index_view(request):
         raise Http404("Lesson does not exist")
     context = {'lesson_list': lesson_list}
     if request.user.is_authenticated:
-        context["notifications"] = request.user.notification_set.all().order_by("created")[:3]
+        context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
     return render(request, "workspace/index.html", context)
 
 
@@ -70,6 +71,8 @@ def lesson_view(request, l_id):
     Current :model:`auth.User` if it is teacher
     ``auth_student``
     Current :model:`auth.User` if it is related student
+    ``editable``
+    Flag that shows if lesson can be modified
     ``at_form``
     Rendered form, forms.AttStartForm for viable teacher,
     forms.AttCheckForm for viable student if attendance started
@@ -82,23 +85,25 @@ def lesson_view(request, l_id):
     context = {'chosen_lesson': chosen_lesson}
     if request.user.is_authenticated:
         if request.user.groups.filter(name="Teachers"):                                     # Teacher perspective
-            context['auth_teacher'] = request.user
             if request.user == chosen_lesson.teacher.user:       # Correct teacher
-                # if chosen_lesson.datetime.date == tz_TARGET.localize(datetime.datetime.now())
-                if not wsm.AttendanceToken.objects.filter(lesson=chosen_lesson):  # No token for this lesson (no repeat)
+                context['auth_teacher'] = request.user
+                # if datetime.date.today() <= chosen_lesson.datetime.date():          # has not passed
+                context['editable'] = True
+                if not wsm.AttendanceToken.objects.filter(lesson=chosen_lesson):
+                    # No token for this lesson (no repeat)
                     if request.method == 'POST':        # Form sent
                         at_form = wsf.AttStartForm(request.POST)
                         if at_form.is_valid():
                             at_token = wsm.AttendanceToken()
                             at_token.lesson = chosen_lesson
-                            t = tz_TARGET.localize(datetime.datetime.now())  # local current time
+                            t = TZ_TARGET.localize(datetime.datetime.now())  # local current time
                             at_token.expire = t + datetime.timedelta(minutes=at_form.cleaned_data['minutes'])
                             # maybe change now() to form value or lesson start
                             at_token.save()                                       # New attendance token created
                             context['message'] = str("Timer started")
                             nn = wsm.Notification()
                             nn.note = "Lesson {} started ".format(chosen_lesson)
-                            nn.link = reverse("workspace:l_detail", args=[chosen_lesson.id])
+                            nn.link = reverse("workspace:lesson_detail", args=[chosen_lesson.id])
                             nn.expire = t + datetime.timedelta(hours=2, minutes=30)
                             # nn.created = t
                             nn.save()
@@ -119,7 +124,7 @@ def lesson_view(request, l_id):
                 at_tok = wsm.AttendanceToken.objects.filter(lesson=chosen_lesson)
                 if at_tok.exists():                                        # If attendance available
                     at_tok = at_tok[0]
-                    if tz_TARGET.localize(datetime.datetime.now()) < at_tok.expire:  # In time
+                    if TZ_TARGET.localize(datetime.datetime.now()) < at_tok.expire:  # In time
                         if request.method == 'POST':        # Form sent
                             at_form = wsf.AttCheckForm(request.POST)
                             if at_form.is_valid():          # Valid values
@@ -156,8 +161,66 @@ def lesson_view(request, l_id):
                     else:                                                   # Too late
                         at_tok.delete()
                         context['message'] = "Attendance expired, token removed"
-        context["notifications"] = request.user.notification_set.all().order_by("created")[:3]
+        context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
     return render(request, "workspace/lesson_detail.html", context)
+
+
+@login_required(login_url="workspace:login")
+def lesson_edit_view(request, l_id):
+    chosen_lesson = get_object_or_404(wsm.Lesson, pk=l_id)
+    context = {'chosen_lesson': chosen_lesson}
+    if request.user.groups.filter(name="Teachers"):
+        if request.user == chosen_lesson.teacher.user:          # Correct teacher
+            # if datetime.date.today() <= chosen_lesson.datetime.date():    # Still editable
+            if request.method == 'POST':
+                form = wsf.LessonForm(request.POST)
+                if form.is_valid():
+                    chosen_lesson.location = form.cleaned_data['location']
+                    chosen_lesson.datetime = datetime.datetime.combine(form.cleaned_data['date'],
+                                                                       form.cleaned_data['time'])
+                    chosen_lesson.type = form.cleaned_data['l_type']
+                    chosen_lesson.modified = True
+                    chosen_lesson.save()
+                    return HttpResponseRedirect(reverse("workspace:lesson_detail", args=[chosen_lesson.id]))
+                else:
+                    context['message'] = "Invalid values, try again"
+                    context['form'] = form
+            else:
+                form = wsf.LessonForm(initial={'location': chosen_lesson.location,'date': chosen_lesson.datetime.date(),
+                                               'time': chosen_lesson.datetime.time(),'type': chosen_lesson.type})
+                context['form'] = form
+            context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
+            return render(request, "workspace/lesson_edit.html", context)
+    return HttpResponseRedirect("/workspace/")  # Unrelated to course
+
+
+@login_required(login_url="workspace:login")
+def lesson_add_view(request):
+    if request.user.groups.filter(name="Teachers"):
+        context = {"notifications": request.user.notification_set.all().order_by("created")[:10]}
+        if request.method == 'POST':
+            form = wsf.LessonAddForm(request.POST)
+            if form.is_valid():
+                new_lesson = wsm.Lesson()
+                new_lesson.discipline = form.cleaned_data['discipline']
+                new_lesson.group = form.cleaned_data['group']
+                new_lesson.location = form.cleaned_data['location']
+                new_lesson.datetime = datetime.datetime.combine(form.cleaned_data['date'],
+                                                                   form.cleaned_data['time'])
+                new_lesson.type = form.cleaned_data['l_type']
+                new_lesson.modified = True
+                new_lesson.teacher = request.user.teacher
+                new_lesson.save()
+                # nn = wsm.Notification(note="New lesson created")
+                return HttpResponseRedirect(reverse("workspace:lesson_detail", args=[new_lesson.id]))
+            else:
+                context['message'] = "Invalid values, try again"
+                context['form'] = form
+        else:
+            form = wsf.LessonAddForm()
+            context['form'] = form
+        return render(request, "workspace/lesson_add.html", context)
+    return HttpResponseRedirect("/workspace/")  # 403 Not teacher
 
 
 class MyLoginView(auth_views.LoginView):
@@ -223,7 +286,7 @@ def webhook_github_view(request, c_id, s_id):
                             n.note = "Github repo of student {} was updated:\n {}".\
                                 format(a_student, commit["message"])
                             n.link = commit["url"]
-                            n.expire = tz_TARGET.localize(datetime.datetime.now()) + datetime.timedelta(days=7)
+                            n.expire = TZ_TARGET.localize(datetime.datetime.now()) + datetime.timedelta(days=7)
                             n.save()
                             n.user.add()
                             return HttpResponse("Success")
@@ -262,7 +325,7 @@ def profile_view(request):
     :template:`workspace/profile.html`
     """
     return render(request, "workspace/profile.html",
-                  {"notifications": request.user.notification_set.all().order_by("created")[:3]})
+                  {"notifications": request.user.notification_set.all().order_by("created")[:10]})
 
 
 @login_required(login_url="workspace:login")
@@ -302,7 +365,7 @@ def marks_menu_view(request):
         context["user_courses"] = request.user.student.group.academiccourse_set.all()
         # wsm.AcademicCourse.objects.filter(group=request.user.student.group)
         context["auth_student"] = True
-    context["notifications"] = request.user.notification_set.all().order_by("created")[:3]
+    context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
     return render(request, "workspace/marks_menu.html", context)
 
 
@@ -350,9 +413,9 @@ def marks_entities_view(request, c_id):                             # version wi
     a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
     # a_course = get_object_or_404(request.user.student.group.academiccourse_set.all(), id=c_id)
     context = {"this_course": a_course, "entities_list": a_course.controlentity_set.all(),
-               "notifications": request.user.notification_set.all().order_by("created")[:3]}
+               "notifications": request.user.notification_set.all().order_by("created")[:10]}
     # c_entities = wsm.ControlEntity.objects.filter(course=a_course)
-    # context["notifications"] = request.user.notification_set.all().order_by("created")[:3]
+    # context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
     if request.user.groups.filter(name="Teachers"):
         # related users only
         if request.user.teacher == a_course.teacher \
@@ -394,9 +457,8 @@ def marks_add_entities_view(request, c_id):
         if request.user.teacher == a_course.teacher:
             if request.method == 'POST':
                 form = wsf.ControlEntityForm(request.POST, initial={'course': a_course})
-                if form.is_valid():     # no validation without course
-                    # form.cleaned_data['course'] = a_course # immutable
-                    # probably should swap to normal form
+                if form.is_valid() and 'course' not in form.changed_data:   # check if course is hijacked
+                    print(form.cleaned_data['course'])
                     form.save()
                     return HttpResponseRedirect(reverse("workspace:marks_entities", args=[a_course.id]))
                 else:
@@ -405,7 +467,7 @@ def marks_add_entities_view(request, c_id):
             else:
                 form = wsf.ControlEntityForm(initial={'course': a_course})
                 context['form'] = form
-            context["notifications"] = request.user.notification_set.all().order_by("created")[:3]
+            context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
             return render(request, "workspace/marks_add_ent.html", context)
     else:
         return HttpResponseRedirect("/workspace/")  # Unrelated to course
@@ -463,7 +525,7 @@ def marks_detail_view(request, c_id, e_id):
         if a_course.group == request.user.student.group:
             # context["marks_list"] = a_entity.mark_set.all()
             context["marks_list"] = student_list_with_marks(a_entity)
-    context["notifications"] = request.user.notification_set.all().order_by("created")[:3]
+    context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
     return render(request, "workspace/marks_detail.html", context)
     # else: return HttpResponseRedirect("/workspace/")
 
@@ -501,15 +563,14 @@ def marks_edit_view(request, c_id, e_id):
             a_students = a_course.group.student_set.all().order_by("user__last_name")
             if len(a_students) > 0:
                 if request.method == 'POST':
-                    # TODO disabled students field
                     MarkFormSet = formset_factory(wsf.MarkForm, extra=len(a_students))
                     formset = MarkFormSet(request.POST, form_kwargs={"student_group": a_students})
-                    print(request.POST)             # debug
+                    # print(request.POST)             # debug
                     if formset.is_valid():                  # Valid forms
                         t = datetime.date.today()
                         for form in formset:
                             # print(form.cleaned_data)
-                            if form.cleaned_data["mark"]:           # if new mark is set
+                            if form.cleaned_data["mark"] is not None:           # if new mark is set
                                 mrk, created = a_entity.mark_set.get_or_create(student=form.cleaned_data["student"],
                                                                                defaults={"reason": a_entity})
                                 mrk.mark = form.cleaned_data["mark"]
@@ -531,7 +592,7 @@ def marks_edit_view(request, c_id, e_id):
                     context["student_forms"] = formset
             else:
                 context["message"] = "No students"          # TODO redirect here
-            context["notifications"] = request.user.notification_set.all().order_by("created")[:3]
+            context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
             return render(request, "workspace/marks_edit.html", context)
     return HttpResponseForbidden("403 Get out", reason="forbidden")
 
@@ -577,7 +638,7 @@ def schedule_view(request):
         vlessons.append((day, viable.filter(datetime__date=day).order_by("datetime__time")))
         day += datetime.timedelta(days=1)
     context = {"personal_lessons": vlessons, "weekday": dt,
-               "notifications": request.user.notification_set.all().order_by("created")[:3]}
+               "notifications": request.user.notification_set.all().order_by("created")[:10]}
     return render(request, "workspace/schedule.html", context)
 
 
@@ -627,7 +688,7 @@ def batch_add_lessons_view(request):        # maybe split weeks
     :template:`workspace/batch_add.html`
     """
     if request.user.is_staff:
-        context = {"notifications": request.user.notification_set.all().order_by("created")[:3]}
+        context = {"notifications": request.user.notification_set.all().order_by("created")[:10]}
         if request.method == 'POST':
             form = wsf.BatchLessonsForm(request.POST)
             if form.is_valid():
@@ -635,18 +696,19 @@ def batch_add_lessons_view(request):        # maybe split weeks
                     delta = datetime.timedelta(days=7)
                 else:
                     delta = datetime.timedelta(days=14)
-                l = wsm.Lesson()
-                l.teacher = form.cleaned_data["teacher"]
-                l.location = form.cleaned_data["location"]
-                l.group = form.cleaned_data["group"]
-                l.discipline = form.cleaned_data["discipline"]
+                les = wsm.Lesson()
+                les.teacher = form.cleaned_data["teacher"]
+                les.location = form.cleaned_data["location"]
+                les.group = form.cleaned_data["group"]
+                les.discipline = form.cleaned_data["discipline"]
+                les.type = form.cleaned_data["l_type"]
                 t = form.cleaned_data["start_date"]
-                while t.weekday() != int(form.cleaned_data["day"]):
+                while t.weekday() != int(form.cleaned_data["day"]):     # "getting" from the start_date to set weekday
                     t += datetime.timedelta(days=1)
                 while t < form.cleaned_data["end_date"]:
-                    l.datetime = datetime.datetime.combine(t, form.cleaned_data["time"])
-                    l.save()
-                    l.pk = None
+                    les.datetime = datetime.datetime.combine(t, form.cleaned_data["time"])
+                    les.save()
+                    les.pk = None
                     t += delta
                     context["message"] = "Success"
             else:

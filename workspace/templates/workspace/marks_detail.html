@@ -4,6 +4,8 @@
 {% block title2 %} Marks for {{ this_entity }} {% endblock %}
 {% block content %}
     <h5> Marks for {{ this_entity.name }}: </h5>
+    <div> Deadline: {{ this_entity.deadline }}  </div>
+    <div> Highest mark: {{ this_entity.mark_max }}  </div>
     {% if marks_list|length > 0  %}
         <table class="marks_table">
             <tr>
@@ -18,7 +20,7 @@
             {% endfor %}
         </table>
     {% elif marks_list %}
-        <p> Empty beep </p>
+        <p> Empty </p>
     {% else %}
         <p> These aren't the Droids you're looking for... </p>
     {% endif %}

@@ -11,6 +11,9 @@
         {% if user.is_staff %}
         <a class="list-group-item list-group-item-action" href="{% url 'workspace:batch_add' %}"> Staff functions </a>
         {% endif %}
+        {% if request.user.teacher %}
+        <a class="list-group-item list-group-item-action" href="{% url 'workspace:lesson_add' %}"> Add lesson </a>
+        {% endif %}
         <a class="list-group-item list-group-item-action" href="{% url 'workspace:logout' %}"> Logout </a>
 </div>
         {% if notifications %}

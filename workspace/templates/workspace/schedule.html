@@ -34,7 +34,10 @@
                            {% for lesson in dy %}
                             <tr>
                                 <td class="l_t_time">{{ lesson.datetime|time:'H:i' }}</td>
-                                <td class="l_t_string"><a href="{% url 'workspace:l_detail' lesson.id %}"> {{ lesson.discipline.name }} {{ lesson.group.name }}</a></td>
+                                <td class="l_t_string"> <a href="{% url 'workspace:lesson_detail' lesson.id %}">
+                                    {{ lesson.discipline.name }} {{ lesson.group.name }}
+                                    {% if lesson.modified %} * {% endif %}
+                                </a></td>
                             </tr>
                             {% endfor %}
                         </table>

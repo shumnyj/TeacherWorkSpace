@@ -85,7 +85,7 @@ footer {
 }
 
 .notification-button {
-    max-width: 300px;
+    max-width: 100%;
     max-height: 100px;
     background: orange;
     border: 1px solid red;
@@ -102,8 +102,9 @@ footer {
 .notification-content {
     position: relative;
     display: none;
-    max-height: 400px;
+    max-height: 200px;
     background: lightgrey;
+    overflow: auto;
     /*width: 20vw;
     right: 103%;
     top: 0;*/
@@ -151,6 +152,7 @@ footer {
 .editlink {
     position: absolute;
 	right: 10%;
+	bottom: 10px;
     text-decoration: underline;
 }
 

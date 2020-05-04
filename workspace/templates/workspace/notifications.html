@@ -1,5 +1,5 @@
 <div class="notification-container">
-    <div class="notification-button" onclick="popup_show()">New notifications</div>
+    <div class="notification-button" onclick="popup_show()">New notifications {{ n.created }}</div>
     <div class="notification-content" id="NotifCont">
          {% for n in notifications %}
             <div class="notification-instance" >

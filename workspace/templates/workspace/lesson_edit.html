@@ -1,0 +1,17 @@
+{% extends "./base.html" %}
+
+{% block title %} Edit lesson {% endblock %}
+{% block title2 %} Edit lesson {% endblock %}
+{% block content %}
+    <h5> Edit lesson {{ chosen_lesson }}: </h5>
+    {% if form %}
+        <form  action="{% url 'workspace:lesson_edit' chosen_lesson.id %}" method="post" class="ul-form">
+            {% csrf_token %}
+            {{ form.as_ul }}
+            <input type="submit" value="Confirm">
+        </form>
+    <p>{{ message }}</p>
+    {% else %}
+        <p class="mytmp"> Page broke </p>
+    {% endif %}
+{% endblock %}

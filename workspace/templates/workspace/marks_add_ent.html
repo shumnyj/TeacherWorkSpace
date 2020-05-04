@@ -6,7 +6,6 @@
     <h5> Add control entity for course {{ this_course }}: </h5>
     {% if form %}
         <form  action="{% url 'workspace:marks_add_ent' this_course.id %}" method="post" class="ul-form">
-            <p class="mytmp"> Unsafe right now </p>
             {% csrf_token %}
             {{ form.as_ul }}
             <input type="submit" value="Add entity">

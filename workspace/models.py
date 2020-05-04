@@ -32,7 +32,7 @@ class Student(models.Model):
     github = models.URLField(blank=True)
 
     def __str__(self):
-        return self.user.first_name + ' ' + self.user.last_name
+        return self.user.last_name + ' ' + self.user.first_name
 
 
 class Teacher(models.Model):

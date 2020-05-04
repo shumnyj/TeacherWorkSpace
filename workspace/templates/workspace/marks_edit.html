@@ -17,9 +17,8 @@
                 </tr>
                 {% for form in student_forms %}
                 <tr>
-                    {% for field in form %}
-                        <td >{{ field }} {{ field.errors }} </td>
-                    {% endfor %}
+                    <td >{{ form.student }} {{ form.student.initial }} {{ form.student.errors }} </td>
+                    <td >{{ form.mark }} {{ form.mark.errors }} </td>
                 </tr>
                 {% endfor %}
             </table>

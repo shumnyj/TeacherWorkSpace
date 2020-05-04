@@ -7,7 +7,7 @@
     {% if lesson_list %}
         <ul>
         {% for lesson in lesson_list %}
-            <li><a href="{% url 'workspace:l_detail' lesson.id %}">
+            <li><a href="{% url 'workspace:lesson_detail' lesson.id %}">
                 {{ lesson.discipline.name }} {{ lesson.group.name }}
             </a></li>
         {% endfor %}

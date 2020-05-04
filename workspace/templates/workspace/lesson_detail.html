@@ -16,19 +16,22 @@
         <div>{{chosen_lesson.teacher}}</div>
         <div>{{chosen_lesson.group}}</div>
         {% if auth_teacher %}
-            <p class="mytmp">Logged as teacher</p>
+            <p class="mytmp">Logged as correct teacher</p>
             {% if at_form %}
-                <form action="{% url 'workspace:l_detail' chosen_lesson.id %}" method="post">
+                <form action="{% url 'workspace:lesson_detail' chosen_lesson.id %}" method="post">
                     {% csrf_token %}
                     {{ at_form }}
                     <input type="submit" value="Start timer">
                 </form>
             {% endif %}
+            {% if editable %}
+            <a class="editlink" href="{% url 'workspace:lesson_edit' chosen_lesson.id %}"> Edit lesson </a>
+            {% endif %}
         {% elif auth_student %}
             <p class="mytmp">Logged as student {{auth_student.student.group.name}}</p>
             {% if at_form %}
                 <button id="setButton" onclick="getLocation()"> Set current location </button>
-                <form action="{% url 'workspace:l_detail' chosen_lesson.id %}" method="post">
+                <form action="{% url 'workspace:lesson_detail' chosen_lesson.id %}" method="post">
                     {% csrf_token %}
                     {{ at_form }}
                     <p id="f_err"></p>
@@ -40,7 +43,7 @@
             <p class="mytmp">{{message}} </p>
         {% endif %}
     {% else %}
-        <p>Broke</p>
+        <p>Page broke, notify the administrator</p>
     {% endif %}
 
 {% endblock %}

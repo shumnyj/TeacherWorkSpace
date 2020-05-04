@@ -8,6 +8,7 @@ admin.site.register(wsm.Student)
 admin.site.register(wsm.Teacher)
 admin.site.register(wsm.Discipline)
 admin.site.register(wsm.ControlCategory)
+admin.site.register(wsm.LessonType)
 admin.site.register(wsm.ControlEntity)
 admin.site.register(wsm.Location)
 admin.site.register(wsm.Lesson)
@@ -17,4 +18,5 @@ admin.site.register(wsm.Mark)
 admin.site.register(wsm.AcademicCourse)
 admin.site.register(wsm.CourseAccess)
 admin.site.register(wsm.Notification)
+
 
