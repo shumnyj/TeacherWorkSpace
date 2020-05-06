@@ -25,7 +25,7 @@
                 </form>
             {% endif %}
             {% if editable %}
-            <a class="editlink" href="{% url 'workspace:lesson_edit' chosen_lesson.id %}"> Edit lesson </a>
+            <a class="edit_btn btn_r" href="{% url 'workspace:lesson_edit' chosen_lesson.id %}"> Edit lesson </a>
             {% endif %}
         {% elif auth_student %}
             <p class="mytmp">Logged as student {{auth_student.student.group.name}}</p>

@@ -1,16 +1,6 @@
-{% extends "./base.html" %}
+{% extends "./generic_edit.html" %}
 
 {% block title %} Batch {% endblock %}
-{% block title2 %} Batch add {% endblock %}
-{% block content %}
-        {% if message %}
-            <p style="color: purple;">{{message}}</p>
-        {% endif %}
-        {% if form %}
-            <form class="ul-form" action="{% url 'workspace:batch_add' %}" method="post">
-                {% csrf_token %}
-                {{ form.as_ul }}
-                <input type="submit" value="Submit">
-            </form>
-        {% endif %}
-{% endblock %}
+{% block title2 %} Batch add lessons {% endblock %}
+
+{% block action_url %} {% url 'workspace:batch_add' %} {% endblock %}

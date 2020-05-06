@@ -1,0 +1,32 @@
+{% extends "./base.html" %}
+
+{% block title %} Marks table {% endblock %}
+{% block title2 %} Marks for {{ this_course }} {% endblock %}
+{% block content %}
+    {% if marks_table %}
+        <h5> Marks table of course {{ this_course }}: </h5>
+        <div class="table_container">
+        <table class="marks_table" style="overflow: auto;">
+            <tr>
+                <th class="start_col"> <p> Student </p></th>
+                {% for ce in ce_list %}
+                    <th class="tmark"> <p> {{ce.name}}</p> </th>
+                {% endfor %}
+                <th class="tmark total_col"> <p> Total </p></th>
+            </tr>
+            {% for st, marks, total in marks_table %}
+            <tr>
+                <td class="start_col" >{{ st }}</td>
+                {% for m in marks %}
+                    <td class="tmark">{{ m.mark }}</td>
+                {% endfor %}
+                <td class="tmark total_col">{{ total }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        </div>
+    {% else %}
+        <p> Page broke </p>
+    {% endif %}
+    <a href="{% url 'workspace:marks_entities' this_course.id %}"> <- Back to course </a>
+{% endblock %}

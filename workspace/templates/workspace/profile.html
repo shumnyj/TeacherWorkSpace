@@ -4,7 +4,8 @@
 {% block title2 %} Profile {% endblock %}
 {% block content %}
     {% if request.user.is_authenticated %}
-        <table>
+        <div class="table_container">
+        <table class= "double_table">
             <tr>
                 <td>Username:</td>
                 <td>{{request.user.username}}</td>
@@ -48,9 +49,9 @@
                 </tr>
             {% endif %}
         </table>
-        <a class="editlink" href="{% url 'workspace:profile' %}"> Edit profile </a>
+        </div>
         <a href="{% url 'workspace:logout' %}">Logout</a>
-
+        <a class="edit_btn btn_r" href="{% url 'workspace:index' %}" > Edit profile </a>
     {% else %}
         <p>Please log in</p>
     {% endif %}

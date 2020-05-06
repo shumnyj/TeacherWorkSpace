@@ -4,10 +4,15 @@
 {% block title2 %} Marks for {{ this_entity }} {% endblock %}
 {% block content %}
     <h5> Marks for {{ this_entity.name }}: </h5>
+    <div> {{ this_entity.etype }}  </div>
     <div> Deadline: {{ this_entity.deadline }}  </div>
     <div> Highest mark: {{ this_entity.mark_max }}  </div>
+    <div> Study materials: </div>
+    <div>  "{{ this_entity.materials }}" </div>
+    <a href="{% url 'workspace:marks_entities' this_entity.course.id %}"> <- Back to course </a>
     {% if marks_list|length > 0  %}
-        <table class="marks_table">
+        <div class="table_container">
+        <table class="ce_marks_table">
             <tr>
                 <th>Students</th>
                 <th>Mark</th>
@@ -19,12 +24,16 @@
                 </tr>
             {% endfor %}
         </table>
+        </div>
     {% elif marks_list %}
         <p> Empty </p>
     {% else %}
         <p> These aren't the Droids you're looking for... </p>
     {% endif %}
     {% if auth_teacher %}
-        <a href="{% url 'workspace:marks_edit' this_entity.course.pk this_entity.pk %}" > Edit marks </a>
+        <a class="edit_btn" href="{% url 'workspace:marks_edit' this_entity.course.pk this_entity.pk %}" > Edit marks </a>
+        <a class="edit_btn" href="{% url 'workspace:marks_entity_change' this_entity.course.pk this_entity.pk %}" > Edit control entity </a>
+        <button class="delete_btn btn_r" onclick="delete_confirm('control entity', '{% url 'workspace:marks_entity_rm' this_entity.course.pk this_entity.pk %}')" > Remove this entity </button>
     {% endif %}
+
 {% endblock %}

@@ -13,10 +13,11 @@
     {% else %}
         <p class="mytmp"> No entities right now </p>
     {% endif %}
+    <a href="{% url 'workspace:marks_table' this_course.id%}"> Marks table </a>
     {% if auth_teacher %}
-        <a href="{% url 'workspace:marks_add_ent' this_course.id %}"> Add more </a>
+        <a class="edit_btn btn_r" href="{% url 'workspace:marks_add_ent' this_course.id %}"> Add more </a>
     {% elif auth_student %}
-        <a> Link for your webhook: {{request.get_host}}{% url 'workspace:github_wh' this_course.id auth_student.id %} </a>
+        <p> Link for your webhook: {{request.get_host}}{% url 'workspace:github_wh' this_course.id auth_student.id %} </p>
     {% endif %}
 
 {% endblock %}

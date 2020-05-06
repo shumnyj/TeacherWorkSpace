@@ -1,0 +1,6 @@
+{% extends "./generic_edit.html" %}
+
+{% block title %} Edit control entity {% endblock %}
+{% block title2 %} Edit control entity {% endblock %}
+{% block action_url %} {% url 'workspace:marks_entity_change' this_entity.course.id this_entity.id %} {% endblock %}
+{% block subheader %} <h5> Edit entity {{ this_entity }}: </h5> {% endblock %}

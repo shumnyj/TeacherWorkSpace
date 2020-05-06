@@ -1,9 +1,9 @@
 {% extends "./base.html" %}
 
 {% block title %} Courses {% endblock %}
-{% block title2 %} Courses for {{ request.user.nickname }} {% endblock %}
+{% block title2 %} Courses for {{ request.user.username }} {% endblock %}
 {% block content %}
-    <h5> Here you can check marks for your courses: </h5>
+    <h5> Here you can check your courses: </h5>
     <ul>
         {% if auth_teacher %}
             {% for course in user_courses %}

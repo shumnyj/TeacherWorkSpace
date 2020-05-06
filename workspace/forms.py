@@ -48,10 +48,8 @@ class MarkForm(forms.Form):
 
 
 class LessonForm(forms.Form):
-    l_type = forms.ModelChoiceField(label='Type', queryset=wsm.LessonType.objects.all(),
-                                    empty_label=None, required=False)
-    location = forms.ModelChoiceField(label='Location', queryset=wsm.Location.objects.all(),
-                                      empty_label=None, required=False)
+    l_type = forms.ModelChoiceField(label='Type', queryset=wsm.LessonType.objects.all(), required=False)
+    location = forms.ModelChoiceField(label='Location', queryset=wsm.Location.objects.all(), required=False)
     date = forms.DateField(label='Date', widget=forms.SelectDateWidget)
     time = forms.TimeField(label='Lesson start time', widget=forms.TimeInput)
 
@@ -82,19 +80,22 @@ class ControlEntityForm(forms.ModelForm):
     """
             Form for teacher to add new control entity to his course
     """
-    # course = forms.ModelChoiceField(queryset=wsm.AcademicCourse.objects, disabled=True)
-
     class Meta:
         model = wsm.ControlEntity
-        fields = ['course', 'etype', 'name', 'deadline', 'mark_max', 'materials']
-        localized_fields = ('deadline',)
+        fields = ['name', 'etype', 'deadline', 'mark_max', 'materials']
         error_messages = {
             NON_FIELD_ERRORS: {'unique_together': "%(model_name)s's %(field_labels)s are not unique.", }
         }
         widgets = {
-            'course': forms.HiddenInput(),
+            # 'course': forms.HiddenInput(),
             'deadline': forms.SelectDateWidget()
         }
+
+
+class ControlEntityChangeForm(ControlEntityForm):
+    class Meta(ControlEntityForm.Meta):
+
+        exclude = ['etype', ]
 
 
 """class ControlEntityForm(forms.Form):

@@ -156,21 +156,49 @@ footer {
     text-decoration: underline;
 }
 
-table {
-    width: 90%;
-    margin: 5px;
+.table_container {
+    padding: 5px;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.double_table {
+    width: 80%;
 }
 
 tr th {
-    padding: 3px;
-    max-width: 400px;
-    border: 1px solid grey;
+    padding: 5px;
+    text-align: center;
+    border: 2px solid grey;
+    color: white;
+    background: CornflowerBlue;
 }
 
 tr td {
+
     padding: 3px;
-    max-width: 400px;
     border: 1px solid grey;
+}
+
+th p {
+    writing-mode: vertical-lr;
+    margin: 0;
+}
+
+th.tmark, td.tmark {
+    max-width: 100px;
+}
+
+.start_col {
+    border: 2px solid grey;
+}
+
+th.total_col {
+    background: MediumSeaGreen;
+}
+
+td.total_col {
+    background: PaleGreen;
 }
 
 .l_t_time {
@@ -181,4 +209,26 @@ tr td {
     width: 60%;
 }
 
+.btn_r {
+    position: absolute;
+	right: 10%;
+}
+
+.delete_btn {
+    display: inline-block;
+    background: #f44336;
+    border: solid red 1px;
+    border-radius: 3px;
+    padding: 3px;
+    margin: 3px;
+}
+
+.edit_btn {
+    display: inline-block;
+    background: lightgrey;
+    border: solid lightblue 1px;
+    border-radius: 3px;
+    padding: 3px;
+    margin: 3px;
+}
 

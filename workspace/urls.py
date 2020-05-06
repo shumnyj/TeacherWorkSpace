@@ -16,9 +16,12 @@ urlpatterns = [
 
     path(r'marks/', views.marks_menu_view, name="marks_menu"),
     path(r'marks/course/<int:c_id>/', views.marks_entities_view, name="marks_entities"),
+    path(r'marks/course/<int:c_id>/table', views.marks_table_view, name="marks_table"),
     path(r'marks/course/<int:c_id>/add', views.marks_add_entities_view, name="marks_add_ent"),
-    path(r'marks/course/<int:c_id>/<int:e_id>/', views.marks_detail_view, name="marks_detail"),
-    path(r'marks/course/<int:c_id>/<int:e_id>/edit/', views.marks_edit_view, name="marks_edit"),
+    path(r'marks/course/<int:c_id>/ce/<int:e_id>/', views.marks_detail_view, name="marks_detail"),
+    path(r'marks/course/<int:c_id>/ce/<int:e_id>/change/', views.marks_change_ent_view, name="marks_entity_change"),
+    path(r'marks/course/<int:c_id>/ce/<int:e_id>/edit/', views.marks_edit_view, name="marks_edit"),
+    path(r'marks/course/<int:c_id>/ce/<int:e_id>/rm/', views.marks_rm_ce_view, name="marks_entity_rm"),
 
     path(r'batch_add/', views.batch_add_lessons_view, name='batch_add'),
     # path(r'course/<int:c_id>/', views.course_view,  name='course_detail'),

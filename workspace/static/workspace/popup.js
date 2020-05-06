@@ -12,3 +12,9 @@ function rm_notification(x) {
         y.parentElement.style.display = "none"
     }
 }
+
+function delete_confirm(text, link) {
+    res = confirm("Are you sure you want to delete this " + text + "?")
+    if (res == true)
+        window.location.href = link;
+}

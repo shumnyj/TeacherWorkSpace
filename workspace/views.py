@@ -9,6 +9,8 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
+from django.db.utils import IntegrityError
+from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.shortcuts import get_object_or_404, render, redirect
 from django.forms import formset_factory
 from django.forms.models import model_to_dict
@@ -45,11 +47,12 @@ def index_view(request):
 
     :template:`workspace/index.html`
     """
+    context = {}
     try:
         lesson_list = wsm.Lesson.objects.order_by('-datetime')[:10]
+        context['lesson_list'] = lesson_list
     except wsm.Lesson.DoesNotExist:
-        raise Http404("Lesson does not exist")
-    context = {'lesson_list': lesson_list}
+        print("no lessons")
     if request.user.is_authenticated:
         context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
     return render(request, "workspace/index.html", context)
@@ -167,6 +170,24 @@ def lesson_view(request, l_id):
 
 @login_required(login_url="workspace:login")
 def lesson_edit_view(request, l_id):
+    """
+        View to edit particular lesson, only for respective teacher
+
+        **Context**
+
+        ``notifications``
+        Notifications for current :model:`auth.User`.
+        ``message``
+        Notification message to render
+        ``chosen_lesson``
+        Current :model:`workspace.Lesson` to edit
+        ``form``
+        Rendered form, forms.LessonForm
+
+        **Template:**
+
+        :template:`workspace/lesson_detail.html`
+        """
     chosen_lesson = get_object_or_404(wsm.Lesson, pk=l_id)
     context = {'chosen_lesson': chosen_lesson}
     if request.user.groups.filter(name="Teachers"):
@@ -196,6 +217,22 @@ def lesson_edit_view(request, l_id):
 
 @login_required(login_url="workspace:login")
 def lesson_add_view(request):
+    """
+        View of particular lesson, also used to mark attendance by related teacher/students
+
+        **Context**
+
+        ``notifications``
+        Notifications for current :model:`auth.User`.
+        ``message``
+        Notification message to render
+        ``form``
+        Rendered form, forms.LessonAddForm
+
+        **Template:**
+
+        :template:`workspace/lesson_detail.html`
+        """
     if request.user.groups.filter(name="Teachers"):
         context = {"notifications": request.user.notification_set.all().order_by("created")[:10]}
         if request.method == 'POST':
@@ -432,6 +469,38 @@ def marks_entities_view(request, c_id):                             # version wi
 
 
 @login_required(login_url="workspace:login")
+def marks_table_view(request, c_id):
+    a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
+    context = {'this_course': a_course}
+    course_marks = wsm.Mark.objects.filter(reason__course=a_course)
+    student_list = a_course.group.student_set.all().order_by('user__last_name')
+    ce_list = a_course.controlentity_set.all().order_by('date_created')
+    context['ce_list'] = ce_list
+    res = []
+    for st in student_list:
+        st_marks = course_marks.filter(student=st)
+        ls = []
+        total = 0
+        for ce in ce_list:
+            try:
+                x = st_marks.get(reason=ce)
+                total += x.mark
+            except wsm.Mark.DoesNotExist:
+                x = ''
+            ls.append(x)
+        res.append((st, ls, total))
+    if request.user.groups.filter(name="Teachers"):
+        if a_course.teacher == request.user.teacher \
+                or a_course.courseaccess_set.filter(teacher=request.user.teacher).exists():
+            context["marks_table"] = res
+    elif request.user.groups.filter(name="Students"):
+        if a_course.group == request.user.student.group:
+            context["marks_table"] = res
+    context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
+    return render(request, "workspace/marks_table.html", context)
+
+
+@login_required(login_url="workspace:login")
 def marks_add_entities_view(request, c_id):
     """
     View with form for teacher to add another :model:`workspace.ControlEntity`
@@ -456,21 +525,67 @@ def marks_add_entities_view(request, c_id):
     if request.user.groups.filter(name="Teachers"):
         if request.user.teacher == a_course.teacher:
             if request.method == 'POST':
-                form = wsf.ControlEntityForm(request.POST, initial={'course': a_course})
-                if form.is_valid() and 'course' not in form.changed_data:   # check if course is hijacked
-                    print(form.cleaned_data['course'])
-                    form.save()
-                    return HttpResponseRedirect(reverse("workspace:marks_entities", args=[a_course.id]))
-                else:
-                    context['message'] = "Invalid values, try again"
-                    context['form'] = form
+                form = wsf.ControlEntityForm(request.POST)          # initial={'course': a_course}
+                print(form.errors.values)
+                if form.is_valid():                                 # and 'course' not in form.changed_data:
+                    fresh_ce = form.save(commit=False)
+                    fresh_ce.course = a_course
+                    try:
+                        fresh_ce.save()
+                        return HttpResponseRedirect(reverse("workspace:marks_entities", args=[a_course.id]))
+                    except IntegrityError:
+                        form.add_error(NON_FIELD_ERRORS, "Course, type and name fields are not unique together")
+                        # context['message'] = "Course, type and name are not unique together"
+                context['message'] = "Invalid values, try again"
+                context['form'] = form
             else:
-                form = wsf.ControlEntityForm(initial={'course': a_course})
+                form = wsf.ControlEntityForm()
                 context['form'] = form
             context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
             return render(request, "workspace/marks_add_ent.html", context)
     else:
         return HttpResponseRedirect("/workspace/")  # Unrelated to course
+
+
+def marks_change_ent_view(request, c_id, e_id):
+    a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
+    a_entity = get_object_or_404(a_course.controlentity_set, id=e_id)
+    context = {"this_entity": a_entity}
+    if request.user.groups.filter(name="Teachers"):
+        if a_course.teacher == request.user.teacher:  # Correct teacher
+            if request.method == 'POST':
+                form = wsf.ControlEntityChangeForm(request.POST)
+                if form.is_valid():
+                    a_entity.name = form.cleaned_data['name']
+                    a_entity.deadline = form.cleaned_data['deadline']
+                    a_entity.mark_max = form.cleaned_data['mark_max']
+                    a_entity.materials = form.cleaned_data['materials']
+                    print(form.Meta.error_messages)
+                    try:
+                        a_entity.save()
+                        return HttpResponseRedirect(reverse("workspace:marks_detail",
+                                                            kwargs={'c_id': a_course.id, 'e_id': a_entity.id}))
+                    except IntegrityError:
+                        context['message'] = "Course, type and name are not unique together for this"
+                else:
+                    context['message'] = "Invalid values, try again"
+                context['form'] = form
+            else:
+                form = wsf.ControlEntityChangeForm(instance=a_entity)
+                context['form'] = form
+            context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
+            return render(request, "workspace/marks_entity_change.html", context)
+    return HttpResponseRedirect("/workspace/")  # Unrelated to course
+
+
+def marks_rm_ce_view(request, c_id, e_id):
+    a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
+    if request.user.groups.filter(name="Teachers"):
+        if request.user.teacher == a_course.teacher:        # only main one can delete
+            a_entity = get_object_or_404(a_course.controlentity_set, id=e_id)
+            a_entity.delete()
+            return HttpResponseRedirect(reverse("workspace:marks_entities", args=[a_course.id]))
+    return HttpResponseForbidden("403 Get out", reason="forbidden")
 
 
 def student_list_with_marks(a_entity):

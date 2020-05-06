@@ -1,17 +1,6 @@
-{% extends "./base.html" %}
+{% extends "./generic_edit.html" %}
 
-{% block title %} Course {% endblock %}
-{% block title2 %} Add entity to course #{{ this_course.id }} {% endblock %}
-{% block content %}
-    <h5> Add control entity for course {{ this_course }}: </h5>
-    {% if form %}
-        <form  action="{% url 'workspace:marks_add_ent' this_course.id %}" method="post" class="ul-form">
-            {% csrf_token %}
-            {{ form.as_ul }}
-            <input type="submit" value="Add entity">
-        </form>
-    <p>{{ message }}</p>
-    {% else %}
-        <p class="mytmp"> Page broke </p>
-    {% endif %}
-{% endblock %}
+{% block title %} Add control entity {% endblock %}
+{% block title2 %} Add control entity {% endblock %}
+{% block action_url %} {% url 'workspace:marks_add_ent' this_course.id %} {% endblock %}
+{% block subheader %} <h5> Add control entity for course {{ this_course }}: </h5> {% endblock %}

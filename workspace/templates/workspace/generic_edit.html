@@ -1,0 +1,17 @@
+{% extends "./base.html" %}
+
+{% block content %}
+    {% block subheader %}{% endblock %}
+        {% if message %}
+                <p style="color: purple;">{{message}}</p>
+        {% endif %}
+        {% if form %}
+            <form  action="{% block action_url %} # {% endblock %}" method="post" class="ul-form">
+                {% csrf_token %}
+                {{ form.as_ul }}
+                <input type="submit" value="Submit">
+            </form>
+        {% else %}
+            <p class="mytmp"> No form </p>
+        {% endif %}
+{% endblock %}
