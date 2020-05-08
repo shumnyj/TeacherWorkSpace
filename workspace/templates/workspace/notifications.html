@@ -3,7 +3,7 @@
     <div class="notification-content" id="NotifCont">
          {% for n in notifications %}
             <div class="notification-instance" >
-                <div><a class="minitext" >{{ n.created }}</a>
+                <div><span class="minitext" >{{ n.created }}</span>
                     <a class="minitext close" href="{% url 'workspace:rm_notif' n.id %}" onclick="rm_notification(this)">X</a></div>
                 <a href={{n.link}} class="notetext">{{ n.note }}</a>
             </div>

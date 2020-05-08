@@ -8,6 +8,7 @@ urlpatterns = [
     path(r'login/', views.MyLoginView.as_view(), name='login'),
     path(r'logout/', views.logout_view, name='logout'),
     path(r'profile/', views.profile_view, name='profile'),
+    path(r'profile/edit', views.edit_profile_view, name='profile_edit'),
 
     path(r'schedule/', views.schedule_view, name='schedule'),
     path(r'lesson/<int:l_id>/', views.lesson_view, name='lesson_detail'),
@@ -26,5 +27,5 @@ urlpatterns = [
     path(r'batch_add/', views.batch_add_lessons_view, name='batch_add'),
     # path(r'course/<int:c_id>/', views.course_view,  name='course_detail'),
     path(r'course/wh/github/<int:c_id>-<int:s_id>/', views.webhook_github_view, name='github_wh'),
-    path(r'notification/remove/<int:n_id>', views.rm_notifcation, name='rm_notif'),
+    path(r'notification/remove/<int:n_id>', views.rm_notification, name='rm_notif'),
 ]

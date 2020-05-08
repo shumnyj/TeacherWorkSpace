@@ -4,10 +4,11 @@
 {% block title2 %} Index page {% endblock %}
 
 {% block content %}
-    <div style="padding-bottom:3000px">
-        <h4> Welcome to workspace page</h4>
+    <div style="padding-bottom:1000px">
+        <h4> Welcome to automated teacher's workspace</h4>
+        <p class="mytmp"> Created by Troian Borys, KV-62 in 2020 </p>
         {% if lesson_list %}
-            <p class="mytmp"> Placeholder </p>
+            <p class="mytmp"> Latest lessons (Placeholder): </p>
             <ul>
             {% for lesson in lesson_list %}
                 <li><a href="{% url 'workspace:lesson_detail' lesson.id %}">

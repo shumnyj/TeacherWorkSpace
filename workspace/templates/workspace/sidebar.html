@@ -6,13 +6,15 @@
 </div>
     {% else %}
         <a class="list-group-item list-group-item-action" href="{% url 'workspace:profile' %}"> Profile </a>
+        {% if request.user.teacher or request.user.student %}
         <a class="list-group-item list-group-item-action" href="{% url 'workspace:schedule' %}"> My Schedule </a>
         <a class="list-group-item list-group-item-action" href="{% url 'workspace:marks_menu' %}"> Marks and control </a>
-        {% if user.is_staff %}
-        <a class="list-group-item list-group-item-action" href="{% url 'workspace:batch_add' %}"> Staff functions </a>
         {% endif %}
         {% if request.user.teacher %}
         <a class="list-group-item list-group-item-action" href="{% url 'workspace:lesson_add' %}"> Add lesson </a>
+        {% endif %}
+        {% if user.is_staff %}
+        <a class="list-group-item list-group-item-action" href="{% url 'workspace:batch_add' %}"> Staff functions </a>
         {% endif %}
         <a class="list-group-item list-group-item-action" href="{% url 'workspace:logout' %}"> Logout </a>
 </div>

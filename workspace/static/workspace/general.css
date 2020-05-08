@@ -8,6 +8,11 @@ body {
     /* background: url("body_bg.jpg") repeat-y ;
     background-size: 100%;*/
 }
+
+label {
+    padding: 3px;
+}
+
 .mytmp {
     color: darkgrey;
     font-size: 0.8em;
@@ -47,6 +52,7 @@ footer {
 	border: 1px solid black;
 	z-index: 1
 }
+
 
 #sidebar {
     width: 100%;
@@ -88,22 +94,22 @@ footer {
     max-width: 100%;
     max-height: 100px;
     background: orange;
-    border: 1px solid red;
-    border-radius: 3px;
+    border: 2px solid orangered;
+    border-radius: 5px;
     padding: 3px;
     z-index: 100;
 }
 
 .notification-container .show {
     display: block;
-
 }
 
 .notification-content {
     position: relative;
     display: none;
     max-height: 200px;
-    background: lightgrey;
+    background: azure;
+    border: 1px solid indigo;
     overflow: auto;
     /*width: 20vw;
     right: 103%;
@@ -112,7 +118,7 @@ footer {
 }
 
 .notification-instance {
-    border-bottom: 1px solid indigo;
+    border-bottom: 1px solid darkorchid;
 }
 
 .notification-instance .notetext {
@@ -126,8 +132,8 @@ footer {
     color: grey;
     margin: 0;
     max-width: 70%;
-
 }
+
 
 .ul-form {
     list-style-type:none;
@@ -149,13 +155,6 @@ footer {
     padding: 3px;
 }
 
-.editlink {
-    position: absolute;
-	right: 10%;
-	bottom: 10px;
-    text-decoration: underline;
-}
-
 .table_container {
     padding: 5px;
     width: 100%;
@@ -171,12 +170,12 @@ tr th {
     text-align: center;
     border: 2px solid grey;
     color: white;
-    background: CornflowerBlue;
+    background: cornflowerblue;
 }
 
 tr td {
 
-    padding: 3px;
+    padding: 5px;
     border: 1px solid grey;
 }
 
@@ -201,6 +200,12 @@ td.total_col {
     background: PaleGreen;
 }
 
+.lessons_table {
+    max-width: 800px;
+    width: 96%;
+    margin: auto
+}
+
 .l_t_time {
     width: 20%;
 }
@@ -209,8 +214,14 @@ td.total_col {
     width: 60%;
 }
 
+.tab-pane h5 {
+    padding: 5px;
+    text-align: center;
+}
+
 .btn_r {
-    position: absolute;
+    position: relative;
+    float: right;
 	right: 10%;
 }
 
@@ -232,3 +243,9 @@ td.total_col {
     margin: 3px;
 }
 
+.editlink {
+    position: absolute;
+	right: 10%;
+	bottom: 10px;
+    text-decoration: underline;
+}

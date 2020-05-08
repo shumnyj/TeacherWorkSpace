@@ -2,8 +2,8 @@
 
 {% block content %}
     {% block subheader %}{% endblock %}
-        {% if message %}
-                <p style="color: purple;">{{message}}</p>
+        {% if c_message %}
+                <p style="color: purple;">{{c_message}}</p>
         {% endif %}
         {% if form %}
             <form  action="{% block action_url %} # {% endblock %}" method="post" class="ul-form">

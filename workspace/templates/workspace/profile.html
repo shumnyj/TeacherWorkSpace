@@ -25,20 +25,26 @@
             <tr>
                 <td>Status:</td>
                 <td>
-                    {% if request.user.teacher %}
-                        Teacher
-                    {% elif request.user.student %}
-                        Student
-                    {% endif %}
+                    {% if request.user.teacher %} Teacher {% endif %}
+                    {% if request.user.student %} Student {% endif %}
                     {% if request.user.is_staff %} Staff {% endif %}
                 </td>
             </tr>
             {% if request.user.teacher %}
                 <tr>
-                    <td>Page:</td>
-                    <td>{{request.user.teacher.page}}</td>
+                    <td>Qualification:</td>
+                    <td>{{request.user.teacher.qualification}}</td>
                 </tr>
+                <tr>
+                    <td>Page:</td>
+                    <td><a href="{{request.user.teacher.page}}" target="_blank">{{request.user.teacher.page}}</a></td>
+                </tr>
+
             {% elif request.user.student %}
+                <tr>
+                    <td>Student ID number:</td>
+                    <td>{{request.user.student.card_id_number}}</td>
+                </tr>
                 <tr>
                     <td>Group:</td>
                     <td>{{request.user.student.group.name}}</td>
@@ -51,7 +57,7 @@
         </table>
         </div>
         <a href="{% url 'workspace:logout' %}">Logout</a>
-        <a class="edit_btn btn_r" href="{% url 'workspace:index' %}" > Edit profile </a>
+        <a class="edit_btn btn_r" href="{% url 'workspace:profile_edit' %}" > Edit profile </a>
     {% else %}
         <p>Please log in</p>
     {% endif %}

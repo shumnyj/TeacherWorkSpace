@@ -9,7 +9,6 @@
 {% block title2 %} My schedule for 2 weeks {% endblock %}
 {% block content %}
     {% if personal_lessons %}
-        <div class="container mt-3">
         <ul class="nav nav-tabs">
         {% for dt, dy in personal_lessons %}
             <li class="nav-item">
@@ -44,7 +43,6 @@
                     </div>
                 {% endif %}
             {% endfor %}
-        </div>
         </div>
     {% else %}
         <p>Broke</p>

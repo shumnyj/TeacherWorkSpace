@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
-
+from django.contrib.auth.validators import UnicodeUsernameValidator
 import datetime
 import workspace.models as wsm
 
@@ -86,6 +86,9 @@ class ControlEntityForm(forms.ModelForm):
         error_messages = {
             NON_FIELD_ERRORS: {'unique_together': "%(model_name)s's %(field_labels)s are not unique.", }
         }
+        labels = {
+            'etype': "Control type"
+        }
         widgets = {
             # 'course': forms.HiddenInput(),
             'deadline': forms.SelectDateWidget()
@@ -94,8 +97,21 @@ class ControlEntityForm(forms.ModelForm):
 
 class ControlEntityChangeForm(ControlEntityForm):
     class Meta(ControlEntityForm.Meta):
-
         exclude = ['etype', ]
+
+
+class ProfileBaseForm(forms.Form):
+    username = forms.CharField(label='Username/Login', max_length=30,
+                               required=False, validators=[UnicodeUsernameValidator])
+    email = forms.EmailField(label="E-mail", required=False)
+
+
+class ProfileStudentForm(ProfileBaseForm):
+    github = forms.URLField(label="Github page", required=False)
+
+
+class ProfileTeacherForm(ProfileBaseForm):
+    page = forms.URLField(label="Personal page", required=False)
 
 
 """class ControlEntityForm(forms.Form):

@@ -4,17 +4,15 @@ import pytz
 import tzlocal
 
 from django.urls import reverse
-from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponseBadRequest
-from django.contrib.auth import views as auth_views
-from django.contrib.auth import login, logout
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidden, HttpResponseBadRequest
+from django.contrib.auth import login, logout, views as auth_views, models as auth_models
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.shortcuts import get_object_or_404, render, redirect
 from django.forms import formset_factory
-from django.forms.models import model_to_dict
-from rest_framework import serializers
+from TeacherWorkSpace.settings import DEBUG
 
 import workspace.models as wsm
 import workspace.forms as wsf
@@ -48,6 +46,12 @@ def index_view(request):
     :template:`workspace/index.html`
     """
     context = {}
+
+    # nn = wsm.Notification.objects.all()
+    # for n in nn:
+    #     if n.expire < TZ_TARGET.localize(datetime.datetime.now()) or n.user.count() == 0:
+    #         n.delete()
+
     try:
         lesson_list = wsm.Lesson.objects.order_by('-datetime')[:10]
         context['lesson_list'] = lesson_list
@@ -66,7 +70,7 @@ def lesson_view(request, l_id):
 
     ``notifications``
     Notifications for current :model:`auth.User`.
-    ``message``
+    ``c_message``
     Notification message to render
     ``chosen_lesson``
     Current :model:`workspace.Lesson`
@@ -90,37 +94,41 @@ def lesson_view(request, l_id):
         if request.user.groups.filter(name="Teachers"):                                     # Teacher perspective
             if request.user == chosen_lesson.teacher.user:       # Correct teacher
                 context['auth_teacher'] = request.user
-                # if datetime.date.today() <= chosen_lesson.datetime.date():          # has not passed
-                context['editable'] = True
-                if not wsm.AttendanceToken.objects.filter(lesson=chosen_lesson):
-                    # No token for this lesson (no repeat)
-                    if request.method == 'POST':        # Form sent
-                        at_form = wsf.AttStartForm(request.POST)
-                        if at_form.is_valid():
-                            at_token = wsm.AttendanceToken()
-                            at_token.lesson = chosen_lesson
-                            t = TZ_TARGET.localize(datetime.datetime.now())  # local current time
-                            at_token.expire = t + datetime.timedelta(minutes=at_form.cleaned_data['minutes'])
-                            # maybe change now() to form value or lesson start
-                            at_token.save()                                       # New attendance token created
-                            context['message'] = str("Timer started")
-                            nn = wsm.Notification()
-                            nn.note = "Lesson {} started ".format(chosen_lesson)
-                            nn.link = reverse("workspace:lesson_detail", args=[chosen_lesson.id])
-                            nn.expire = t + datetime.timedelta(hours=2, minutes=30)
-                            # nn.created = t
-                            nn.save()
-                            # nn.user.set(auth.User.objects.filter(student__group = chosen_lesson.group)
-                            for student in chosen_lesson.group.student_set.all():
-                                nn.user.add(student.user)
-                            nn.save()
-                        else:
-                            context['at_form'] = at_form
-                            context['message'] = str("Error in form")
-                    else:                   # Initial form view
-                        context['at_form'] = wsf.AttStartForm()
-                # else:
-                    # remove atttoken
+                if (not DEBUG and datetime.date.today() <= chosen_lesson.datetime.date()) or DEBUG:     # has not passed
+                    context['editable'] = True
+                if (not DEBUG and datetime.date.today() == chosen_lesson.datetime.date()) or DEBUG:     # right day
+                    tok = wsm.AttendanceToken.objects.filter(lesson=chosen_lesson)
+                    if not tok:
+                        # No token for this lesson (no repeat)
+                        if request.method == 'POST':        # Form sent
+                            at_form = wsf.AttStartForm(request.POST)
+                            if at_form.is_valid():
+                                at_token = wsm.AttendanceToken()
+                                at_token.lesson = chosen_lesson
+                                t = TZ_TARGET.localize(datetime.datetime.now())  # local current time
+                                at_token.expire = t + datetime.timedelta(minutes=at_form.cleaned_data['minutes'])
+                                at_token.save()                                  # New attendance token created
+                                context['c_message'] = str("Timer started")
+                                nn = wsm.Notification()
+                                nn.note = "Lesson {} started ".format(chosen_lesson)
+                                nn.link = reverse("workspace:lesson_detail", args=[chosen_lesson.id])
+                                nn.expire = t + datetime.timedelta(hours=2, minutes=30)
+                                nn.created = t
+                                nn.save()
+                                nn.user.set(auth_models.User.objects.filter(student__group=chosen_lesson.group))
+                                # for student in chosen_lesson.group.student_set.all():
+                                # nn.user.add(student.user)
+                                nn.save()
+                            else:
+                                context['at_form'] = at_form
+                                context['c_message'] = str("Error in form")
+                        else:                   # Initial form view
+                            context['at_form'] = wsf.AttStartForm()
+                    else:
+                        tok = tok[0]
+                        if tok.expire < TZ_TARGET.localize(datetime.datetime.now()):
+                            tok.delete()
+                            context['c_message'] = "Old token expired"
         elif request.user.groups.filter(name="Students"):                                   # Student perspective
             if request.user.student.group == chosen_lesson.group:           # Correct student
                 context['auth_student'] = request.user    # maybe check for repeats
@@ -146,24 +154,24 @@ def lesson_view(request, l_id):
                                                     and abs(t_lon - chosen_lesson.location.lon) < LON_DELTA:
                                                 # square accept zone
                                                 # delta 0.000210 lat 0.000370 lon for ~ 50*50 m from center
-                                                context['message'] = "Success"
+                                                context['c_message'] = "Success"
                                             else:
-                                                context['message'] = "Too far (Recorded)"
+                                                context['c_message'] = "Too far (Recorded)"
                                         else:
-                                            context['message'] = "Recorded"
+                                            context['c_message'] = "Recorded"
                                     except wsm.Attendance.MultipleObjectsReturned:         # Shouldn't show up
-                                        context['message'] = "Multiple objects error, contact admin"
+                                        context['c_message'] = "Multiple objects error, contact admin"
                                 else:
-                                    context['message'] = "invalid values, try again"
+                                    context['c_message'] = "invalid values, try again"
                                     context['at_form'] = at_form
                             else:
-                                context['message'] = "invalid values here"
+                                context['c_message'] = "invalid values here"
                                 context['at_form'] = at_form
                         else:                               # Initial form view
                             context['at_form'] = wsf.AttCheckForm()
                     else:                                                   # Too late
                         at_tok.delete()
-                        context['message'] = "Attendance expired, token removed"
+                        context['c_message'] = "Attendance expired, token removed"
         context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
     return render(request, "workspace/lesson_detail.html", context)
 
@@ -177,7 +185,7 @@ def lesson_edit_view(request, l_id):
 
         ``notifications``
         Notifications for current :model:`auth.User`.
-        ``message``
+        ``c_message``
         Notification message to render
         ``chosen_lesson``
         Current :model:`workspace.Lesson` to edit
@@ -192,24 +200,26 @@ def lesson_edit_view(request, l_id):
     context = {'chosen_lesson': chosen_lesson}
     if request.user.groups.filter(name="Teachers"):
         if request.user == chosen_lesson.teacher.user:          # Correct teacher
-            # if datetime.date.today() <= chosen_lesson.datetime.date():    # Still editable
-            if request.method == 'POST':
-                form = wsf.LessonForm(request.POST)
-                if form.is_valid():
-                    chosen_lesson.location = form.cleaned_data['location']
-                    chosen_lesson.datetime = datetime.datetime.combine(form.cleaned_data['date'],
-                                                                       form.cleaned_data['time'])
-                    chosen_lesson.type = form.cleaned_data['l_type']
-                    chosen_lesson.modified = True
-                    chosen_lesson.save()
-                    return HttpResponseRedirect(reverse("workspace:lesson_detail", args=[chosen_lesson.id]))
+            if (not DEBUG and datetime.date.today() <= chosen_lesson.datetime.date()) or DEBUG:  # has not passed
+                if request.method == 'POST':
+                    form = wsf.LessonForm(request.POST)
+                    if form.is_valid():
+                        chosen_lesson.location = form.cleaned_data['location']
+                        chosen_lesson.datetime = datetime.datetime.combine(form.cleaned_data['date'],
+                                                                           form.cleaned_data['time'])
+                        chosen_lesson.type = form.cleaned_data['l_type']
+                        chosen_lesson.modified = True
+                        chosen_lesson.save()
+                        return HttpResponseRedirect(reverse("workspace:lesson_detail", args=[chosen_lesson.id]))
+                    else:
+                        context['c_message'] = "Invalid values, try again"
+                        context['form'] = form
                 else:
-                    context['message'] = "Invalid values, try again"
+                    form = wsf.LessonForm(initial={'location': chosen_lesson.location,'date': chosen_lesson.datetime.date(),
+                                                   'time': chosen_lesson.datetime.time(),'type': chosen_lesson.type})
                     context['form'] = form
             else:
-                form = wsf.LessonForm(initial={'location': chosen_lesson.location,'date': chosen_lesson.datetime.date(),
-                                               'time': chosen_lesson.datetime.time(),'type': chosen_lesson.type})
-                context['form'] = form
+                context['c_message'] = "Lesson edit period already expired"
             context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
             return render(request, "workspace/lesson_edit.html", context)
     return HttpResponseRedirect("/workspace/")  # Unrelated to course
@@ -224,7 +234,7 @@ def lesson_add_view(request):
 
         ``notifications``
         Notifications for current :model:`auth.User`.
-        ``message``
+        ``c_message``
         Notification message to render
         ``form``
         Rendered form, forms.LessonAddForm
@@ -251,7 +261,7 @@ def lesson_add_view(request):
                 # nn = wsm.Notification(note="New lesson created")
                 return HttpResponseRedirect(reverse("workspace:lesson_detail", args=[new_lesson.id]))
             else:
-                context['message'] = "Invalid values, try again"
+                context['c_message'] = "Invalid values, try again"
                 context['form'] = form
         else:
             form = wsf.LessonAddForm()
@@ -280,13 +290,6 @@ def logout_view(request):
     return HttpResponseRedirect("/workspace/")
 
 
-"""
-    def course_view(request, c_id):
-    a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
-    return HttpResponseRedirect("/workspace/") 
-"""
-
-
 @csrf_exempt
 def webhook_github_view(request, c_id, s_id):
     """
@@ -295,7 +298,7 @@ def webhook_github_view(request, c_id, s_id):
 
     **Context**
 
-    ``message``
+    ``c_message``
     Returned message
     """
     a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
@@ -327,24 +330,24 @@ def webhook_github_view(request, c_id, s_id):
                             n.save()
                             n.user.add()
                             return HttpResponse("Success")
-                    context["message"] = "Ignored payload"
+                    context["c_message"] = "Ignored payload"
                     print("Ignored payload")
                     return HttpResponse("Ignored")
                 except KeyError:
-                    context["message"] = "Invalid payload"
+                    context["c_message"] = "Invalid payload"
                     print("Invalid payload")
                     return HttpResponseBadRequest("Invalid payload")
             else:
-                context["message"] = "Invalid agent"
+                context["c_message"] = "Invalid agent"
                 print("Invalid agent")  # debug
                 return HttpResponseBadRequest("Invalid agent")
         except KeyError:
-            context["message"] = "No agent"
+            context["c_message"] = "No agent"
             print("No agent")
             return HttpResponseBadRequest("No agent")
     else:
         return HttpResponseRedirect("/workspace/")
-        # return render(request, "workspace/webhook_test.html", {"message": "Get out, this is test"})
+        # return render(request, "workspace/webhook_test.html", {"c_message": "Get out, this is test"})
 
 
 @login_required(login_url="workspace:login")
@@ -361,8 +364,75 @@ def profile_view(request):
 
     :template:`workspace/profile.html`
     """
+    form = wsf.ProfileTeacherForm()
+    print(dir(form))
+    print(form.data)
     return render(request, "workspace/profile.html",
                   {"notifications": request.user.notification_set.all().order_by("created")[:10]})
+
+
+@login_required(login_url="workspace:login")
+def edit_profile_view(request):
+    """
+    View to edit some profile data
+
+    **Context**
+
+    ``notifications``
+    Notifications for current :model:`auth.User`.
+    ``form``
+    forms.ProfileBaseForm or it's subclass form instance
+    **Template:**
+
+    :template:`workspace/profile.html`
+    """
+    this_user = request.user
+    context = {"notifications": request.user.notification_set.all().order_by("created")[:10]}
+    if request.user.groups.filter(name="Teachers"):
+        if request.method == 'POST':
+            form = wsf.ProfileTeacherForm(request.POST)
+            if form.is_valid():
+                if 'username' in form.changed_data:
+                    this_user.username = form.cleaned_data['username']
+                if 'email' in form.changed_data:
+                    this_user.email = form.cleaned_data['email']
+                if 'page' in form.changed_data:
+                    this_user.teacher.page = form.cleaned_data['page']
+                    this_user.teacher.save()
+                this_user.save()
+                print(form.changed_data)
+                return HttpResponseRedirect(reverse("workspace:profile"))
+        else:
+            form = wsf.ProfileTeacherForm()
+    elif request.user.groups.filter(name="Students"):
+        if request.method == 'POST':
+            form = wsf.ProfileStudentForm(request.POST)
+            if form.is_valid():
+                if 'username' in form.changed_data:
+                    this_user.username = form.cleaned_data['username']
+                if 'email' in form.changed_data:
+                    this_user.email = form.cleaned_data['email']
+                if 'github' in form.changed_data:
+                    this_user.student.github = form.cleaned_data['github']
+                    this_user.teacher.save()
+                this_user.save()
+                return HttpResponseRedirect(reverse("workspace:profile"))
+        else:
+            form = wsf.ProfileStudentForm()
+    else:
+        if request.method == 'POST':
+            form = wsf.ProfileBaseForm(request.POST)
+            if form.is_valid():
+                if 'username' in form.changed_data:
+                    this_user.username = form.cleaned_data['username']
+                if 'email' in form.changed_data:
+                    this_user.email = form.cleaned_data['email']
+                this_user.save()
+                return HttpResponseRedirect(reverse("workspace:profile"))
+        else:
+            form = wsf.ProfileBaseForm()
+    context['form'] = form
+    return render(request, "workspace/profile_edit.html", context)
 
 
 @login_required(login_url="workspace:login")
@@ -426,7 +496,7 @@ def get_custom_context(request, view, **kwargs):        # example of integrated 
 
 
 @login_required(login_url="workspace:login")
-def marks_entities_view(request, c_id):                             # version with menu view for student
+def marks_entities_view(request, c_id):
     """
         Menu view with list of control entities in course current user is related to
 
@@ -449,55 +519,69 @@ def marks_entities_view(request, c_id):                             # version wi
     """
     a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
     # a_course = get_object_or_404(request.user.student.group.academiccourse_set.all(), id=c_id)
-    context = {"this_course": a_course, "entities_list": a_course.controlentity_set.all(),
+    context = {"this_course": a_course, "entities_list": a_course.controlentity_set.all().order_by('deadline'),
                "notifications": request.user.notification_set.all().order_by("created")[:10]}
-    # c_entities = wsm.ControlEntity.objects.filter(course=a_course)
-    # context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
     if request.user.groups.filter(name="Teachers"):
         # related users only
         if request.user.teacher == a_course.teacher \
                 or a_course.courseaccess_set.filter(teacher=request.user.teacher).exists():    # Additional access
             context["auth_teacher"] = True
             return render(request, "workspace/marks_entities.html", context)
-            # alternatively for teacher - table view/list of entites - links to mark input form
     elif request.user.groups.filter(name="Students"):
         if a_course.group == request.user.student.group:    # related users only
-            # alternatively for student - list of all entites+marks in this course
             context.update(get_custom_context(request, marks_entities_view, course=a_course))   # modular context
             return render(request, "workspace/marks_entities.html", context)
-    return HttpResponseRedirect("/workspace/")              # Unrelated to course
+    HttpResponseRedirect(reverse("workspace:marks_menu"))            # Unrelated to course
 
 
 @login_required(login_url="workspace:login")
 def marks_table_view(request, c_id):
+    """
+     View with table that contains all marks for the course
+
+     **Context**
+
+     ``notifications``
+     Notifications for current :model:`auth.User`.
+     ``this_course``
+     :model:`workspace.AcademicCourse` of this page
+     ``ce_list``
+     List of :model:`workspace.ControlEntity` to create table header
+     ``marks_table``
+     Table with student name, marks and sum of their marks
+
+     **Template:**
+
+     :template:`workspace/marks_add_ent.html`
+     """
     a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
     context = {'this_course': a_course}
-    course_marks = wsm.Mark.objects.filter(reason__course=a_course)
-    student_list = a_course.group.student_set.all().order_by('user__last_name')
-    ce_list = a_course.controlentity_set.all().order_by('date_created')
-    context['ce_list'] = ce_list
-    res = []
-    for st in student_list:
-        st_marks = course_marks.filter(student=st)
-        ls = []
-        total = 0
-        for ce in ce_list:
-            try:
-                x = st_marks.get(reason=ce)
-                total += x.mark
-            except wsm.Mark.DoesNotExist:
-                x = ''
-            ls.append(x)
-        res.append((st, ls, total))
-    if request.user.groups.filter(name="Teachers"):
-        if a_course.teacher == request.user.teacher \
-                or a_course.courseaccess_set.filter(teacher=request.user.teacher).exists():
-            context["marks_table"] = res
-    elif request.user.groups.filter(name="Students"):
-        if a_course.group == request.user.student.group:
-            context["marks_table"] = res
-    context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
-    return render(request, "workspace/marks_table.html", context)
+    if (request.user.groups.filter(name="Teachers") and             # Viable teacher or student
+        (a_course.teacher == request.user.teacher or
+         a_course.courseaccess_set.filter(teacher=request.user.teacher).exists())) or \
+            (request.user.groups.filter(name="Students") and a_course.group == request.user.student.group):
+        course_marks = wsm.Mark.objects.filter(reason__course=a_course)
+        student_list = a_course.group.student_set.all().order_by('user__last_name')
+        ce_list = a_course.controlentity_set.all().order_by('deadline')
+        context['ce_list'] = ce_list
+        res = []
+        for st in student_list:
+            st_marks = course_marks.filter(student=st)
+            ls = []
+            total = 0
+            for ce in ce_list:
+                try:
+                    x = st_marks.get(reason=ce)
+                    total += x.mark
+                except wsm.Mark.DoesNotExist:
+                    x = ''
+                ls.append(x)
+            res.append((st, ls, total))
+        context["marks_table"] = res
+        context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
+        return render(request, "workspace/marks_table.html", context)
+    else:
+        HttpResponseRedirect(reverse("workspace:marks_menu"))
 
 
 @login_required(login_url="workspace:login")
@@ -509,7 +593,7 @@ def marks_add_entities_view(request, c_id):
 
     ``notifications``
     Notifications for current :model:`auth.User`.
-    ``message``
+    ``c_message``
     Notification message to render
     ``this_course``
     :model:`workspace.AcademicCourse` of this page
@@ -523,7 +607,7 @@ def marks_add_entities_view(request, c_id):
     a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
     context = {"this_course": a_course}
     if request.user.groups.filter(name="Teachers"):
-        if request.user.teacher == a_course.teacher:
+        if request.user.teacher == a_course.teacher:                # only main one
             if request.method == 'POST':
                 form = wsf.ControlEntityForm(request.POST)          # initial={'course': a_course}
                 print(form.errors.values)
@@ -535,8 +619,8 @@ def marks_add_entities_view(request, c_id):
                         return HttpResponseRedirect(reverse("workspace:marks_entities", args=[a_course.id]))
                     except IntegrityError:
                         form.add_error(NON_FIELD_ERRORS, "Course, type and name fields are not unique together")
-                        # context['message'] = "Course, type and name are not unique together"
-                context['message'] = "Invalid values, try again"
+                        # context['c_message'] = "Course, type and name are not unique together"
+                context['c_message'] = "Invalid values, try again"
                 context['form'] = form
             else:
                 form = wsf.ControlEntityForm()
@@ -544,7 +628,7 @@ def marks_add_entities_view(request, c_id):
             context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
             return render(request, "workspace/marks_add_ent.html", context)
     else:
-        return HttpResponseRedirect("/workspace/")  # Unrelated to course
+        return HttpResponseForbidden("403 Get out", reason="forbidden")  # Unrelated to course
 
 
 def marks_change_ent_view(request, c_id, e_id):
@@ -552,7 +636,7 @@ def marks_change_ent_view(request, c_id, e_id):
     a_entity = get_object_or_404(a_course.controlentity_set, id=e_id)
     context = {"this_entity": a_entity}
     if request.user.groups.filter(name="Teachers"):
-        if a_course.teacher == request.user.teacher:  # Correct teacher
+        if a_course.teacher == request.user.teacher:  # Correct teacher, only main one
             if request.method == 'POST':
                 form = wsf.ControlEntityChangeForm(request.POST)
                 if form.is_valid():
@@ -566,19 +650,22 @@ def marks_change_ent_view(request, c_id, e_id):
                         return HttpResponseRedirect(reverse("workspace:marks_detail",
                                                             kwargs={'c_id': a_course.id, 'e_id': a_entity.id}))
                     except IntegrityError:
-                        context['message'] = "Course, type and name are not unique together for this"
+                        context['c_message'] = "Course, type and name are not unique together for this"
                 else:
-                    context['message'] = "Invalid values, try again"
+                    context['c_message'] = "Invalid values, try again"
                 context['form'] = form
             else:
                 form = wsf.ControlEntityChangeForm(instance=a_entity)
                 context['form'] = form
             context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
             return render(request, "workspace/marks_entity_change.html", context)
-    return HttpResponseRedirect("/workspace/")  # Unrelated to course
+    return HttpResponseForbidden("403 Get out", reason="forbidden")  # Unrelated to course
 
 
 def marks_rm_ce_view(request, c_id, e_id):
+    """
+    Pseudo view to delete control entity
+    """
     a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
     if request.user.groups.filter(name="Teachers"):
         if request.user.teacher == a_course.teacher:        # only main one can delete
@@ -657,7 +744,7 @@ def marks_edit_view(request, c_id, e_id):
 
     ``notifications``
     Notifications for current :model:`auth.User`.
-    ``message``
+    ``c_message``
     Notification message to render
     ``this_entity``
     :model:`workspace.ControlEntity` of this page
@@ -691,10 +778,10 @@ def marks_edit_view(request, c_id, e_id):
                                 mrk.mark = form.cleaned_data["mark"]
                                 mrk.date = t
                                 mrk.save()
-                        context["message"] = "Successfully saved"
+                        context["c_message"] = "Successfully saved"
                         return redirect('workspace:marks_detail', c_id=a_course.id, e_id=a_entity.id)
                     else:
-                        context["message"] = "Error in form"
+                        context["c_message"] = "Error in form"
                         context["student_forms"] = formset
                 else:
                     # form = wsf.MarkForm(data={"student": a_students[0]}, student_group=a_students)
@@ -706,15 +793,10 @@ def marks_edit_view(request, c_id, e_id):
                         i += 1
                     context["student_forms"] = formset
             else:
-                context["message"] = "No students"          # TODO redirect here
+                context["c_message"] = "No students"          # TODO redirect here
             context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
             return render(request, "workspace/marks_edit.html", context)
     return HttpResponseForbidden("403 Get out", reason="forbidden")
-
-
-# @login_required(login_url="workspace:login")
-# def marks_discipline_view(request):
-#    render(request, "workspace/marks_discipline.html")
 
 
 @login_required(login_url="workspace:login")
@@ -757,7 +839,10 @@ def schedule_view(request):
     return render(request, "workspace/schedule.html", context)
 
 
-def rm_notifcation(request, n_id):
+def rm_notification(request, n_id):
+    """
+        Pseudo view to delete notification
+    """
     try:
         nn = wsm.Notification.objects.get(id=n_id)
         nn.user.remove(request.user)
@@ -766,22 +851,6 @@ def rm_notifcation(request, n_id):
         return HttpResponse('', status=204)
     except wsm.Notification.DoesNotExist:
         return HttpResponse('', status=404)
-
-
-
-"""
-dt = datetime.date.today()
-min = dt - datetime.timedelta(days=dt.weekday())
-max = dt + datetime.timedelta(days=13-dt.weekday())
-dt = dt.weekday()
-viable = wsm.Lesson.objects.filter(datetime__gte=min).filter(datetime__lte=max)
-if request.user.groups.filter(name="Teachers"):
-    vialble = viable.filter(teacher=request.user.teacher).order_by("datetime")
-elif request.user.groups.filter(name="Students"):
-    vialble = viable.filter(group=request.user.student.group).order_by("datetime")
-else:
-    return HttpResponseRedirect("/workspace/")
-return render(request, "workspace/schedule.html", {"personal_lessons": viable, "weekday": dt})"""
 
 
 @login_required(login_url="workspace:login")
@@ -793,7 +862,7 @@ def batch_add_lessons_view(request):        # maybe split weeks
 
     ``notifications``
     Notifications for current :model:`auth.User`.
-    ``message``
+    ``c_message``
     Notification message to render
     ``form``
     Instance of forms.BatchLessonsForm
@@ -825,36 +894,12 @@ def batch_add_lessons_view(request):        # maybe split weeks
                     les.save()
                     les.pk = None
                     t += delta
-                    context["message"] = "Success"
+                    context["c_message"] = "Success"
             else:
                 context["form"] = form
-                context["message"] = "Error during processing, try again"
+                context["c_message"] = "Error during processing, try again"
         else:
             context["form"] = wsf.BatchLessonsForm()
         return render(request, "workspace/batch_add.html", context)
     else:
         return HttpResponseForbidden("403 Get out", reason="forbidden")
-
-
-"""
-def login_view(request):
-    username = ""
-    password = ""
-    pnext = ""
-
-    if request.GET:
-        pnext = request.GET['next']
-    if request.POST:
-        username = request.POST['username']
-        password = request.POST['password']
-
-    user = authenticate(request, username=username, password=password)
-    if user is not None:
-        if user.is_active:
-            login(request, user)
-            if pnext == "":
-                return HttpResponseRedirect('/workspace/')
-            else:
-                return HttpResponseRedirect(next)
-    return render(request, "workspace/login.html")
-"""
