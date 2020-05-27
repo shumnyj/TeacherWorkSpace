@@ -59,9 +59,8 @@ footer {
     position: sticky;
     top: 0;
     padding: 10px;
-    max-height: 300px;
+    max-height: 350px;
 	background: darkslateblue;
-	color: white;
 	border-bottom: 10px solid blueviolet;
 	z-index: 100;
 }
@@ -93,6 +92,7 @@ footer {
 .notification-button {
     max-width: 100%;
     max-height: 100px;
+    color: white;
     background: orange;
     border: 2px solid orangered;
     border-radius: 5px;

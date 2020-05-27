@@ -10,12 +10,22 @@
         <h5 style="text-decoration: underline;">{{chosen_lesson}}</h5>
         <div>{{chosen_lesson.datetime|date:"l, j.m.Y G:i O" }}</div>
         <div>{{chosen_lesson.type|default:""}}</div>
-        <div><a href="https://www.google.com/maps/place/{{chosen_lesson.location.lat}},{{chosen_lesson.location.lon}}/@{{chosen_lesson.location.lat}},{{chosen_lesson.location.lon}},15z" target="_blank">
+        <div><a href="{% url 'workspace:get_loc' chosen_lesson.location.lat chosen_lesson.location.lon  %}" target="_blank">
             {{chosen_lesson.location|default:"No location"}}
         </a></div>
         <div>{{chosen_lesson.teacher}}</div>
         <div>{{chosen_lesson.group}}</div>
         {% if auth_teacher %}
+            {% if att_tab %}
+                <table>
+                    {% for st, at in att_tab %}
+                    <tr>
+                        <td> {{ st }} </td>
+                        <td> {{ at }} </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
             <p class="mytmp">Logged as correct teacher</p>
             {% if at_form %}
                 <form action="{% url 'workspace:lesson_detail' chosen_lesson.id %}" method="post">

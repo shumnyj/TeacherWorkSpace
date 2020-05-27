@@ -25,7 +25,7 @@ urlpatterns = [
     path(r'marks/course/<int:c_id>/ce/<int:e_id>/rm/', views.marks_rm_ce_view, name="marks_entity_rm"),
 
     path(r'batch_add/', views.batch_add_lessons_view, name='batch_add'),
-    # path(r'course/<int:c_id>/', views.course_view,  name='course_detail'),
     path(r'course/wh/github/<int:c_id>-<int:s_id>/', views.webhook_github_view, name='github_wh'),
     path(r'notification/remove/<int:n_id>', views.rm_notification, name='rm_notif'),
+    path(r'loc/<lat>,<lon>', views.ShowLocationView.as_view(), name='get_loc'),
 ]

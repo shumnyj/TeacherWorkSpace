@@ -4,8 +4,12 @@
          {% for n in notifications %}
             <div class="notification-instance" >
                 <div><span class="minitext" >{{ n.created }}</span>
-                    <a class="minitext close" href="{% url 'workspace:rm_notif' n.id %}" onclick="rm_notification(this)">X</a></div>
-                <a href={{n.link}} class="notetext">{{ n.note }}</a>
+                <a class="minitext close" href="{% url 'workspace:rm_notif' n.id %}" onclick="rm_notification(this)">X</a></div>
+                {% if n.link %}
+                    <a href={{n.link}} class="notetext">{{ n.note }}</a>
+                {% else %}
+                    <a class="notetext">{{ n.note }}</a>
+                {% endif %}
             </div>
          {% endfor %}
     </div>

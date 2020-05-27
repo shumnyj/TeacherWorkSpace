@@ -124,7 +124,7 @@ class Lesson(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     location = models.ForeignKey(Location, blank=True, null=True, on_delete=models.SET_NULL)
     datetime = models.DateTimeField()
-    type = models.ForeignKey(LessonType, blank=True, null=True, on_delete=models.PROTECT)          #lect/lab
+    type = models.ForeignKey(LessonType, blank=True, null=True, on_delete=models.PROTECT)          # lect/lab
     # materials = models.TextField(blank=True)                                  #links, books, etc
     modified = models.BooleanField(default=False)       # by teacher
 

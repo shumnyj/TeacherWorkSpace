@@ -8,6 +8,7 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseForbidde
 from django.contrib.auth import login, logout, views as auth_views, models as auth_models
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic.base import RedirectView
 from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.shortcuts import get_object_or_404, render, redirect
@@ -28,8 +29,32 @@ SCHEDULE_TIME = [datetime.time(8, 30, 0, 0, tzinfo=TZ_TARGET),
                  datetime.time(14, 15, 0, 0, tzinfo=TZ_TARGET),
                  datetime.time(16, 10, 0, 0, tzinfo=TZ_TARGET)]
 COMMIT_TAG = "[WS]"
+LOCATION_URL = "https://www.google.com/maps/place/%(lat)s,%(lon)s/@%(lat)s,%(lon)s,15z"
 LAT_DELTA = 0.000210
 LON_DELTA = 0.000370
+
+CUSTOM_CONTEXT_FUNC = (lambda request, view, **kwargs: {})
+
+
+def get_custom_context(request, view, **kwargs):  # example of integrated function
+    """
+     Function for creating dictionary of custom context variables
+     for passing to basic view to be rendered in template
+     :param request: request from view
+     :param view: actual view that needs context
+     :param kwargs: additional arguments
+     :return: list of tuples (:model:`workspace.Student`, [float, None])
+     """
+    custom_context = dict()
+    if view == marks_entities_view:
+        if 'course' in kwargs:
+            a_course = kwargs['course']
+            if a_course.discipline.name == "Math" or a_course.discipline.name == "Algoritms":
+                custom_context["auth_student"] = request.user.student
+        return custom_context
+
+
+CUSTOM_CONTEXT_FUNC = get_custom_context
 
 
 def index_view(request):
@@ -46,12 +71,10 @@ def index_view(request):
     :template:`workspace/index.html`
     """
     context = {}
-
     # nn = wsm.Notification.objects.all()
     # for n in nn:
     #     if n.expire < TZ_TARGET.localize(datetime.datetime.now()) or n.user.count() == 0:
     #         n.delete()
-
     try:
         lesson_list = wsm.Lesson.objects.order_by('-datetime')[:10]
         context['lesson_list'] = lesson_list
@@ -61,6 +84,28 @@ def index_view(request):
         context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
     return render(request, "workspace/index.html", context)
 
+
+def get_attendance(les):
+    """
+        Function for creating list for attendance (alphabetic ordering) of tuples (student, presence)
+        :param les: current lesson
+        :return: list of tuples (:model:`workspace.Student`, string)
+    """
+    att_set = les.attendance_set.all()
+    #if att_set.count() > 0:
+    st_set = les.group.student_set.all().order_by("user__last_name")
+    result_list = []
+    for st in st_set:
+        att = att_set.filter(student=st)
+        if att.count() == 1:
+            att = att[0]
+            if abs(att.lat - les.location.lat) < LAT_DELTA and abs(att.lon - les.location.lon) < LON_DELTA:
+                result_list.append((st, 'Present'))
+            else:
+                result_list.append((st, 'Recorded'))
+        else:
+            result_list.append((st, 'Absent'))
+    return result_list
 
 def lesson_view(request, l_id):
     """
@@ -94,58 +139,60 @@ def lesson_view(request, l_id):
         if request.user.groups.filter(name="Teachers"):                                     # Teacher perspective
             if request.user == chosen_lesson.teacher.user:       # Correct teacher
                 context['auth_teacher'] = request.user
+                if (not DEBUG and datetime.date.today() >= chosen_lesson.datetime.date()) or DEBUG:
+                    context['att_tab'] = get_attendance(chosen_lesson)      # Show attendance
                 if (not DEBUG and datetime.date.today() <= chosen_lesson.datetime.date()) or DEBUG:     # has not passed
                     context['editable'] = True
-                if (not DEBUG and datetime.date.today() == chosen_lesson.datetime.date()) or DEBUG:     # right day
-                    tok = wsm.AttendanceToken.objects.filter(lesson=chosen_lesson)
-                    if not tok:
-                        # No token for this lesson (no repeat)
-                        if request.method == 'POST':        # Form sent
-                            at_form = wsf.AttStartForm(request.POST)
-                            if at_form.is_valid():
-                                at_token = wsm.AttendanceToken()
-                                at_token.lesson = chosen_lesson
-                                t = TZ_TARGET.localize(datetime.datetime.now())  # local current time
-                                at_token.expire = t + datetime.timedelta(minutes=at_form.cleaned_data['minutes'])
-                                at_token.save()                                  # New attendance token created
-                                context['c_message'] = str("Timer started")
-                                nn = wsm.Notification()
-                                nn.note = "Lesson {} started ".format(chosen_lesson)
-                                nn.link = reverse("workspace:lesson_detail", args=[chosen_lesson.id])
-                                nn.expire = t + datetime.timedelta(hours=2, minutes=30)
-                                nn.created = t
-                                nn.save()
-                                nn.user.set(auth_models.User.objects.filter(student__group=chosen_lesson.group))
-                                # for student in chosen_lesson.group.student_set.all():
-                                # nn.user.add(student.user)
-                                nn.save()
-                            else:
-                                context['at_form'] = at_form
-                                context['c_message'] = str("Error in form")
-                        else:                   # Initial form view
-                            context['at_form'] = wsf.AttStartForm()
-                    else:
-                        tok = tok[0]
-                        if tok.expire < TZ_TARGET.localize(datetime.datetime.now()):
-                            tok.delete()
-                            context['c_message'] = "Old token expired"
+                    if (not DEBUG and datetime.date.today() == chosen_lesson.datetime.date()) or DEBUG:     # right day
+                        tok = wsm.AttendanceToken.objects.filter(lesson=chosen_lesson)
+                        if not tok:
+                            # No token for this lesson (no repeat)
+                            if request.method == 'POST':        # Form sent
+                                at_form = wsf.AttStartForm(request.POST)
+                                if at_form.is_valid():
+                                    at_token = wsm.AttendanceToken()
+                                    at_token.lesson = chosen_lesson
+                                    t = TZ_TARGET.localize(datetime.datetime.now())  # local current time
+                                    at_token.expire = t + datetime.timedelta(minutes=at_form.cleaned_data['minutes'])
+                                    at_token.save()                                  # New attendance token created
+                                    context['c_message'] = str("Timer started")
+                                    nn = wsm.Notification()
+                                    nn.note = "Lesson {} started ".format(chosen_lesson)
+                                    nn.link = reverse("workspace:lesson_detail", args=[chosen_lesson.id])
+                                    nn.expire = t + datetime.timedelta(hours=2, minutes=30)
+                                    nn.created = t
+                                    nn.save()
+                                    nn.user.set(auth_models.User.objects.filter(student__group=chosen_lesson.group))
+                                    # for student in chosen_lesson.group.student_set.all():
+                                    # nn.user.add(student.user)
+                                    nn.save()
+                                else:
+                                    context['at_form'] = at_form
+                                    context['c_message'] = str("Error in form")
+                            else:                   # Initial form view
+                                context['at_form'] = wsf.AttStartForm()
+                        else:
+                            tok = tok[0]
+                            if tok.expire < TZ_TARGET.localize(datetime.datetime.now()):
+                                tok.delete()
+                                context['c_message'] = "Old token expired"
         elif request.user.groups.filter(name="Students"):                                   # Student perspective
             if request.user.student.group == chosen_lesson.group:           # Correct student
                 context['auth_student'] = request.user    # maybe check for repeats
                 at_tok = wsm.AttendanceToken.objects.filter(lesson=chosen_lesson)
-                if at_tok.exists():                                        # If attendance available
+                if at_tok.exists():                         # If attendance available
                     at_tok = at_tok[0]
                     if TZ_TARGET.localize(datetime.datetime.now()) < at_tok.expire:  # In time
                         if request.method == 'POST':        # Form sent
                             at_form = wsf.AttCheckForm(request.POST)
-                            if at_form.is_valid():          # Valid values
+                            if at_form.is_valid():      # Valid values
                                 t_lat = at_form.cleaned_data['lat']
                                 t_lon = at_form.cleaned_data['lon']
                                 if -180 < t_lat < 180 and -90 < t_lon < 90:  # Valid values (add validator?)
                                     try:
                                         attendance, cr = wsm.Attendance.objects\
-                                            .get_or_create(student=request.user.student, lesson=chosen_lesson)
-                                        # defaults={'lon': t_lon, 'lat': t_lat}
+                                            .get_or_create(student=request.user.student, lesson=chosen_lesson,
+                                                           defaults={'lon': t_lon, 'lat': t_lat})
                                         attendance.lat = t_lat
                                         attendance.lon = t_lon
                                         attendance.save()
@@ -282,12 +329,17 @@ class MyLoginView(auth_views.LoginView):
     redirect_field_name = "/"
 
 
+@login_required(login_url="workspace:login")
 def logout_view(request):
     """
     Logout pseudo view
     """
     logout(request)
-    return HttpResponseRedirect("/workspace/")
+    return HttpResponseRedirect(reverse("workspace:index"))
+
+
+class ShowLocationView(RedirectView):
+    url = LOCATION_URL
 
 
 @csrf_exempt
@@ -309,8 +361,7 @@ def webhook_github_view(request, c_id, s_id):
         try:
             if request.META["HTTP_USER_AGENT"].startswith("GitHub-Hookshot"):
                 data_dict = json.loads(request.body)
-                try:
-                    # TODO: Need to figure out reliable check
+                try:                    # Need to figure out reliable check
                     """retrieved_repo = data_dict["repository"]
                     if retrieved_repo["owner"]["email"]:            # == a_student.email / nickname / whatever
                         data_str = json.dumps(retrieved_repo, indent=4, separators=(',', ':'))"""
@@ -331,11 +382,10 @@ def webhook_github_view(request, c_id, s_id):
                             n.user.add()
                             return HttpResponse("Success")
                     context["c_message"] = "Ignored payload"
-                    print("Ignored payload")
+                    # print("Ignored payload")
                     return HttpResponse("Ignored")
                 except KeyError:
-                    context["c_message"] = "Invalid payload"
-                    print("Invalid payload")
+                    # print("Invalid payload")
                     return HttpResponseBadRequest("Invalid payload")
             else:
                 context["c_message"] = "Invalid agent"
@@ -346,7 +396,7 @@ def webhook_github_view(request, c_id, s_id):
             print("No agent")
             return HttpResponseBadRequest("No agent")
     else:
-        return HttpResponseRedirect("/workspace/")
+        return HttpResponseRedirect(reverse("workspace:index"))
         # return render(request, "workspace/webhook_test.html", {"c_message": "Get out, this is test"})
 
 
@@ -365,8 +415,6 @@ def profile_view(request):
     :template:`workspace/profile.html`
     """
     form = wsf.ProfileTeacherForm()
-    print(dir(form))
-    print(form.data)
     return render(request, "workspace/profile.html",
                   {"notifications": request.user.notification_set.all().order_by("created")[:10]})
 
@@ -386,6 +434,7 @@ def edit_profile_view(request):
 
     :template:`workspace/profile.html`
     """
+
     this_user = request.user
     context = {"notifications": request.user.notification_set.all().order_by("created")[:10]}
     if request.user.groups.filter(name="Teachers"):
@@ -476,25 +525,6 @@ def marks_menu_view(request):
     return render(request, "workspace/marks_menu.html", context)
 
 
-def get_custom_context(request, view, **kwargs):        # example of integrated function
-    """
-     Function for creating dictionary of custom context variables
-     for passing to basic view to be rendered in template
-     :param request: request from view
-     :param view: actual view that needs context
-     :param kwargs: additional arguments
-     :return: list of tuples (:model:`workspace.Student`, [float, None])
-     """
-    custom_context = dict()
-    if view == marks_entities_view:
-        if 'course' in kwargs:
-            a_course = kwargs['course']
-            if a_course.discipline.name == "Math":  # check if discipline that needs github webhook
-                custom_context["auth_student"] = request.user.student
-        return custom_context
-    # reverse("workspace:github_wh", kwargs={"c_id": a_course.id, "s_id": request.user.student.id})
-
-
 @login_required(login_url="workspace:login")
 def marks_entities_view(request, c_id):
     """
@@ -529,7 +559,7 @@ def marks_entities_view(request, c_id):
             return render(request, "workspace/marks_entities.html", context)
     elif request.user.groups.filter(name="Students"):
         if a_course.group == request.user.student.group:    # related users only
-            context.update(get_custom_context(request, marks_entities_view, course=a_course))   # modular context
+            context.update(CUSTOM_CONTEXT_FUNC(request, marks_entities_view, course=a_course))   # modular context
             return render(request, "workspace/marks_entities.html", context)
     HttpResponseRedirect(reverse("workspace:marks_menu"))            # Unrelated to course
 
@@ -631,6 +661,7 @@ def marks_add_entities_view(request, c_id):
         return HttpResponseForbidden("403 Get out", reason="forbidden")  # Unrelated to course
 
 
+@login_required(login_url="workspace:login")
 def marks_change_ent_view(request, c_id, e_id):
     a_course = get_object_or_404(wsm.AcademicCourse, id=c_id)
     a_entity = get_object_or_404(a_course.controlentity_set, id=e_id)
@@ -644,7 +675,6 @@ def marks_change_ent_view(request, c_id, e_id):
                     a_entity.deadline = form.cleaned_data['deadline']
                     a_entity.mark_max = form.cleaned_data['mark_max']
                     a_entity.materials = form.cleaned_data['materials']
-                    print(form.Meta.error_messages)
                     try:
                         a_entity.save()
                         return HttpResponseRedirect(reverse("workspace:marks_detail",
@@ -662,6 +692,7 @@ def marks_change_ent_view(request, c_id, e_id):
     return HttpResponseForbidden("403 Get out", reason="forbidden")  # Unrelated to course
 
 
+@login_required(login_url="workspace:login")
 def marks_rm_ce_view(request, c_id, e_id):
     """
     Pseudo view to delete control entity
@@ -721,11 +752,9 @@ def marks_detail_view(request, c_id, e_id):
         if a_course.teacher == request.user.teacher \
                 or a_course.courseaccess_set.filter(teacher=request.user.teacher).exists():
             context["auth_teacher"] = True
-            # context["marks_list"] = a_entity.mark_set.all()
             context["marks_list"] = student_list_with_marks(a_entity)
     elif request.user.groups.filter(name="Students"):
         if a_course.group == request.user.student.group:
-            # context["marks_list"] = a_entity.mark_set.all()
             context["marks_list"] = student_list_with_marks(a_entity)
     context["notifications"] = request.user.notification_set.all().order_by("created")[:10]
     return render(request, "workspace/marks_detail.html", context)
@@ -767,11 +796,9 @@ def marks_edit_view(request, c_id, e_id):
                 if request.method == 'POST':
                     MarkFormSet = formset_factory(wsf.MarkForm, extra=len(a_students))
                     formset = MarkFormSet(request.POST, form_kwargs={"student_group": a_students})
-                    # print(request.POST)             # debug
                     if formset.is_valid():                  # Valid forms
                         t = datetime.date.today()
                         for form in formset:
-                            # print(form.cleaned_data)
                             if form.cleaned_data["mark"] is not None:           # if new mark is set
                                 mrk, created = a_entity.mark_set.get_or_create(student=form.cleaned_data["student"],
                                                                                defaults={"reason": a_entity})
@@ -784,7 +811,6 @@ def marks_edit_view(request, c_id, e_id):
                         context["c_message"] = "Error in form"
                         context["student_forms"] = formset
                 else:
-                    # form = wsf.MarkForm(data={"student": a_students[0]}, student_group=a_students)
                     MarkFormSet = formset_factory(wsf.MarkForm, extra=len(a_students))
                     formset = MarkFormSet(form_kwargs={"student_group": a_students})
                     i = 0
@@ -839,6 +865,7 @@ def schedule_view(request):
     return render(request, "workspace/schedule.html", context)
 
 
+@login_required(login_url="workspace:login")
 def rm_notification(request, n_id):
     """
         Pseudo view to delete notification
@@ -846,7 +873,7 @@ def rm_notification(request, n_id):
     try:
         nn = wsm.Notification.objects.get(id=n_id)
         nn.user.remove(request.user)
-        if nn.user.all().count() == 0:
+        if nn.user.all().count() == 0 or nn.expire < TZ_TARGET.localize(datetime.datetime.now()):
             nn.delete()
         return HttpResponse('', status=204)
     except wsm.Notification.DoesNotExist:

@@ -3,7 +3,7 @@
 {% block title %} Edit {% endblock %}
 {% block title2 %} Edit Marks for {{ this_entity }} {% endblock %}
 {% block content %}
-    <h5> Edit for {{ this_entity.name }}: </h5>
+    <h5> Edit marks for {{ this_entity.name }}: </h5>
 
     {% if student_forms %}
         <form action="{% url 'workspace:marks_edit' this_entity.course.pk this_entity.pk %}" method="post">
